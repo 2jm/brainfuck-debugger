@@ -1,3 +1,8 @@
+# CLion project settings
+assa/.idea/
+# CLion build path
+bin/
+
 # Object files
 *.o
 *.ko
