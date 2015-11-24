@@ -6,6 +6,8 @@
 #define ASSA_INTERPRETER_H
 
 #include <stddef.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 //------------------------------------------------------------------------------
 ///
@@ -22,7 +24,7 @@
 ///         -1 if the program ran the specified steps
 //
 
-int interpreter(char *program, char **data, size_t *data_length,
+int interpreter(char *program, char **data_segment, size_t *data_length,
                   char **program_counter, char **data_pointer, int steps);
 
 #endif //ASSA_INTERPRETER_H
