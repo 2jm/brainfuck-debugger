@@ -27,7 +27,7 @@ void run(char *program, char **data, size_t *data_length,char **program_counter,
 
 }
 
-void eval(char **data, char **data_pointer, char *input_code)
+void eval(char **data, size_t *data_length, char **data_pointer, char *input_code)
 {
   
 }
