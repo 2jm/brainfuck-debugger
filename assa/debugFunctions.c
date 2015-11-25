@@ -27,9 +27,9 @@ void load(char *filedirectory, char *program)
 
 
   if((file = fopen(filedirectory, "r")) == NULL)
-    printf("Err at reading file");
+    printf("Err at reading file");  //check if the file can be read
   else
-  {
+  { //read the file char by char and write it into an array
     while((character = fgetc(file)) != EOF)
     {
       if(character == '<' || '>' || '+' || '-' || '.' || ',' || '[' || ']')
@@ -48,12 +48,13 @@ void run(char *program, char **data, size_t *data_length,char **program_counter,
   int steps;
   int actualPosition;
 
-  actualPosition = *program_counter - program;
-
+  actualPosition = *program_counter - program;  //difference between start of
+                                                //the array and the actual 
+                                                //position in the bfcode
   if(breakpoints[0] != 0)
     steps = breakpoints[0] - actualPosition;
   else
-    steps = 0;
+    steps = 0;  //if the whole bfcode should be run through
 
   interpreter(program, data, data_length, program_counter, 
                   data_pointer, steps);
@@ -74,8 +75,8 @@ void eval(char **data, size_t *data_length, char **data_pointer,
   char new_bfcode[len];
   char *new_program_counter;
 
-  new_program_counter = new_bfcode;
-
+  new_program_counter = new_bfcode; //pointer which points at the start of the
+                                    //new_bfcode array
   for(loopCounter = 0; loopCounter<len; loopCounter++)
   {
     if(input_bfstring[loopCounter] == '<' || '>' || '+' ||'-' || '.' || ',' || 
