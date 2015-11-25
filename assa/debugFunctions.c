@@ -18,7 +18,8 @@
 
 //-----------------------------------------------------------------------------
 ///
-/// Loading the code out of a file and write it into an array.
+/// Loading the code character by character out of a file and write it into an 
+/// array.
 ///
 /// @param *filedirectory directory of the codefile to fetch
 /// @param *program Array in which the bf-code gets written
@@ -26,7 +27,20 @@
 //
 void load(char *filedirectory, char *program)
 {
+  FILE *file
+  char character;
+  int counter;
 
+  if((file = fopen()) == NULL)
+    printf("Err at reading file");
+  else
+  {
+    while((character = fgetc(file) != EOF)
+    {
+      *program[counter] = character;
+      counter++;
+    }
+  }
 }
 
 //-----------------------------------------------------------------------------
