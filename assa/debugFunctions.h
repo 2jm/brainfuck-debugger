@@ -61,6 +61,6 @@ void run(char *program, char **data, size_t *data_length,char **program_counter,
 ///
 //
 void eval(char **data, size_t *data_length, char **data_pointer, 
-          char *input_code);
+          char *input_bfstring);
 
 #endif //ASSA_DEBUGFUNCTIONS_H
