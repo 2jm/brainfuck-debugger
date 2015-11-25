@@ -22,8 +22,9 @@
 void load(char *filedirectory, char *program)
 {
   FILE *file;
-  char character;
+  int character;
   int loopCounter;
+
 
   if((file = fopen(filedirectory, "r")) == NULL)
     printf("Err at reading file");
@@ -31,8 +32,11 @@ void load(char *filedirectory, char *program)
   {
     while((character = fgetc(file)) != EOF)
     {
+      if(character == '<' || '>' || '+' || '-' || '.' || ',' || '[' || ']')
+      {
       program[loopCounter] = character;
-      loopCounter++;
+      loopCounter++;        
+      }
     }
   }
 }
@@ -46,16 +50,43 @@ void run(char *program, char **data, size_t *data_length,char **program_counter,
 
   actualPosition = *program_counter - program;
 
-  steps = breakpoints[0] - actualPosition;
+  if(breakpoints[0] != 0)
+    steps = breakpoints[0] - actualPosition;
+  else
+    steps = 0;
 
-  int interpreter(char *program, char **data, size_t *data_length,
-                 char **program_counter, char **data_pointer, steps);
+  interpreter(program, data, data_length, program_counter, 
+                  data_pointer, steps);
 
 }
 
 
 void eval(char **data, size_t *data_length, char **data_pointer, 
-          char *input_code)
+          char *input_bfstring)
 {
-  
+  int len;
+
+  int counter;
+  int loopCounter;
+
+  len = strlen(input_bfstring);
+
+  char new_bfcode[len];
+  char *new_program_counter;
+
+  new_program_counter = new_bfcode;
+
+  for(loopCounter = 0; loopCounter<len; loopCounter++)
+  {
+    if(input_bfstring[loopCounter] == '<' || '>' || '+' ||'-' || '.' || ',' || 
+      '[' || ']')
+    {
+      new_bfcode[counter] = input_bfstring[loopCounter];
+      counter++;        
+    }
+  }
+
+  interpreter(new_bfcode, data, data_length, &new_program_counter, 
+                  data_pointer, 0);
 }
+
