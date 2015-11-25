@@ -15,15 +15,15 @@
 //-----------------------------------------------------------------------------
 //
 
-#include <debugFunctions.h>
-#include <interpreter.h>
+#include "debugFunctions.h"
+#include "interpreter.h"
 
 
 void load(char *filedirectory, char *program)
 {
   FILE *file;
   char character;
-  int counter;
+  int loopCounter;
 
   if((file = fopen(filedirectory, "r")) == NULL)
     printf("Err at reading file");
@@ -31,8 +31,8 @@ void load(char *filedirectory, char *program)
   {
     while((character = fgetc(file)) != EOF)
     {
-      program[counter] = character;
-      counter++;
+      program[loopCounter] = character;
+      loopCounter++;
     }
   }
 }
@@ -41,6 +41,15 @@ void load(char *filedirectory, char *program)
 void run(char *program, char **data, size_t *data_length,char **program_counter,
         char **data_pointer, int *breakpoints)
 {
+  int steps;
+  int actualPosition;
+
+  actualPosition = *program_counter - program;
+
+  steps = breakpoints[0] - actualPosition;
+
+  int interpreter(char *program, char **data, size_t *data_length,
+                 char **program_counter, char **data_pointer, steps);
 
 }
 
