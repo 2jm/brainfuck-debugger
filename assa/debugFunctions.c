@@ -15,6 +15,8 @@
 //-----------------------------------------------------------------------------
 //
 
+#include <stdio.h>
+
 
 //-----------------------------------------------------------------------------
 ///
@@ -27,17 +29,17 @@
 //
 void load(char *filedirectory, char *program)
 {
-  FILE *file
+  FILE *file;
   char character;
   int counter;
 
-  if((file = fopen()) == NULL)
+  if((file = fopen(filedirectory, "r")) == NULL)
     printf("Err at reading file");
   else
   {
-    while((character = fgetc(file) != EOF)
+    while((character = fgetc(file)) != EOF)
     {
-      *program[counter] = character;
+      program[counter] = character;
       counter++;
     }
   }
