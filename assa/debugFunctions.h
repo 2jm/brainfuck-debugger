@@ -19,6 +19,7 @@
 #define ASSA_DEBUGFUNCTIONS_H
 
 #include <stdio.h>
+#include <string.h>
 
 //-----------------------------------------------------------------------------
 ///
