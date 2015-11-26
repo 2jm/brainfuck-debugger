@@ -32,12 +32,15 @@ void load(char *filedirectory, char *program)
   { //read the file char by char and write it into an array
     while((character = fgetc(file)) != EOF)
     {
-      if(character == '<' || '>' || '+' || '-' || '.' || ',' || '[' || ']')
+      if(character == '<' || character == '>' || character == '+' || 
+        character == '-' || character == '.' || character == ',' || 
+        character == '[' || character == ']')
       {
       program[loopCounter] = character;
       loopCounter++;        
       }
     }
+    program[loopCounter] = '\0';
   }
 }
 
