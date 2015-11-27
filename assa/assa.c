@@ -287,8 +287,8 @@ int main (int argc, char *argv[])
       // stimmt noch - gibt aus: 4f
       *(data_segment + number) = hex_byte;
     }
-    free (line);
   }
+  free (line);
 
   // free all variables used above here
   free (data_segment);

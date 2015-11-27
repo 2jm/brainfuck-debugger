@@ -31,8 +31,11 @@
             <pair source="c" header="h" />
           </extensions>
         </Objective-C-extensions>
+        <XML>
+          <option name="XML_LEGACY_SETTINGS_IMPORTED" value="true" />
+        </XML>
       </value>
     </option>
-    <option name="PREFERRED_PROJECT_CODE_STYLE" value="Default (1)" />
+    <option name="PREFERRED_PROJECT_CODE_STYLE" value="C Coding Style ESP NEW" />
   </component>
 </project>
