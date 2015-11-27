@@ -4,7 +4,7 @@ int main()
 {
   char *code = "++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>.";
   size_t data_segment_size = 1024;
-  char *data_segment = calloc(sizeof(char), data_segment_size);
+  char *data_segment = calloc(data_segment_size, sizeof(char));
 
   char *program_counter = code;
   char *data_pointer = data_segment;
