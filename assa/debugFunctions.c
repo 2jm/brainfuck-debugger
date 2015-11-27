@@ -71,6 +71,9 @@ int run (char *program, char **data, size_t *data_length,
 void eval (char **data, size_t *data_length, char **data_pointer,
            char *input_bfstring)
 {
+  //TODO: load befstring into code-variable (from main) when strlen(code) == 0
+  //TODO: (no program currently in memory)
+
   int counter = 0;
 
   size_t len = strlen (input_bfstring);
