@@ -2,7 +2,6 @@
 // Created by jonas on 24.11.15.
 //
 
-#include <string.h>
 #include "interpreter.h"
 
 
@@ -14,7 +13,7 @@ int interpreter(char *program, char **data_segment, size_t *data_length,
   int direction = (steps < 0) ? -1 : 1;
 
   if(steps == 0)
-    steps = -1;   //runs infinitely long
+    steps = -1;   //runs infinitely long (to the end of the program)
 
   for(; **program_counter != 0 && steps != 0; steps -= direction)
   {
