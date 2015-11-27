@@ -77,7 +77,7 @@ void eval (char **data, size_t *data_length, char **data_pointer,
   int counter = 0;
 
   size_t len = strlen (input_bfstring);
-  // spezification: maxlength of eval input: 80 chars
+  // specification: maxlength of eval input: 80 chars
   if (len > 80)
   {
     len = 80;

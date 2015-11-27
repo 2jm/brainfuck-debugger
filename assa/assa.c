@@ -211,7 +211,7 @@ int main (int argc, char *argv[])
       cmd = strtok (NULL, " ");
       if (cmd == NULL)
       {
-        printf ("%s at %d:%x\n", "hex", 0, *(data_segment));
+        printf ("Hex at %d: %x\n", 0, *(data_segment));
         continue;
       }
       int number = (int) strtol (cmd, (char **) NULL, 10); // 10 = base of digit
@@ -221,23 +221,24 @@ int main (int argc, char *argv[])
 
       if (strcmp (type, "hex") == 0)
       {
-        printf ("%s at %d:%x\n", type, number, *(data_segment + number));
+        printf ("Hex at %d: %x\n", number, *(data_segment + number));
       }
       else if (strcmp (type, "int") == 0)
       {
-        printf ("%s at %d:%d\n", type, number, *(data_segment + number));
+        printf ("Integer at %d: %d\n", number, *(data_segment + number));
       }
       else if (strcmp (type, "bin") == 0)
       {
         //Quelle: http://stackoverflow.com/questions/6373093/how-to-print-binary-number-via-printf
         char buffer[33];
         itoa (*(data_segment + number), buffer, 2);
-        printf ("%s at %d:%s\n", type, number, buffer);
+        int binary = strtol(buffer, (char**) NULL, 10);
+        printf ("Binary at %d: %08d\n", number, binary);
         //TODO: try if this is possible with strtol
       }
       else if (strcmp (type, "char") == 0)
       {
-        printf ("%s at %d:%c\n", type, number, *(data_segment + number));
+        printf ("Character at %d: %c\n", number, *(data_segment + number));
       }
     }
     else if (strcmp (cmd, "show") == 0)
