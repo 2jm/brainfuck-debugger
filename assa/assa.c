@@ -229,7 +229,8 @@ int main (int argc, char *argv[])
       }
       else if (strcmp (type, "bin") == 0)
       {
-        //Quelle: http://stackoverflow.com/questions/6373093/how-to-print-binary-number-via-printf
+        //Source: http://stackoverflow
+        // .com/questions/6373093/how-to-print-binary-number-via-printf
         char buffer[33];
         itoa (*(data_segment + number), buffer, 2);
         int binary = strtol(buffer, (char**) NULL, 10);
@@ -252,7 +253,8 @@ int main (int argc, char *argv[])
       // 10 is default size
       int size = cmd != NULL ? strtol (cmd, (char **) NULL, 10) : 10;
 
-      // Quelle: http://stackoverflow.com/questions/4214314/get-a-substring-of-a-char
+      // Source: http://stackoverflow
+      // .com/questions/4214314/get-a-substring-of-a-char
       // print "size" characters from target string
       // at code position + offset
       printf ("%.*s\n", size, code + (code_position - code));
@@ -269,12 +271,17 @@ int main (int argc, char *argv[])
       int number = strtol (cmd, &end_ptr, 10);
       if (end_ptr == cmd) // conversion failed
       {
-        //Default: number = aktuelle Position; hex_byte: 0x00
+        // default number: current position
         number = 0;
       }
 
       cmd = strtok (NULL, " ");
-      int hex_byte = (int) strtol (cmd, (char **) NULL, 16);
+      int hex_byte = (int) strtol (cmd, &end_ptr, 16);
+      if (end_ptr == cmd) // conversion failed
+      {
+        // default hex_byte: 0x0
+        hex_byte = 0;
+      }
 
       //TODO: Debug
       printf ("Read: hex: 0x%x - int: %i\n", hex_byte, hex_byte);
