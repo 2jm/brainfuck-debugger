@@ -199,7 +199,7 @@ int main (int argc, char *argv[])
       int steps = (int) strtol(cmd, (char**)NULL, 10);
 
       interpreter(code, &data_segment, &data_segment_size, &code_position,
-                  &data_pointer, steps);
+                  &data_pointer, steps, -1);
 //      run (code, &data_segment, &data_segment_size, &code_position,
 //           &data_pointer, breakpoints); //== 0
     }
@@ -234,7 +234,10 @@ int main (int argc, char *argv[])
         //Source: http://stackoverflow
         // .com/questions/6373093/how-to-print-binary-number-via-printf
         char buffer[33];
-        itoa (*(data_segment + number), buffer, 2);
+
+        // comment by Jonas
+        // itoa is not a standard function, yet not supported by the gcc
+        //itoa (*(data_segment + number), buffer, 2);
         int binary = strtol(buffer, (char**) NULL, 10);
         printf ("Binary at %d: %08d\n", number, binary);
         //TODO: try if this is possible with strtol

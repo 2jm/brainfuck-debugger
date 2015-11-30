@@ -7,7 +7,8 @@
 void expandDataSegment (char **data_segment, size_t *data_length);
 
 int interpreter (char *program, char **data_segment, size_t *data_length,
-                 char **program_counter, char **data_pointer, int steps)
+                 char **program_counter, char **data_pointer, int steps,
+                 int breakpoint)
 {
   int direction = (steps < 0) ? -1 : 1;
 
@@ -16,7 +17,7 @@ int interpreter (char *program, char **data_segment, size_t *data_length,
     steps = -1;
   }   //runs infinitely long (to the end of the program)
 
-  for (; **program_counter != 0 && steps != 0; steps -= direction)
+  for (; **program_counter != 0 && steps != 0 && *program_counter != program+breakpoint; steps -= direction)
   {
     //printf("%c %d - ", **program_counter, steps);
     switch (**program_counter)

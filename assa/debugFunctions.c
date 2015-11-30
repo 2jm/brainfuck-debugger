@@ -65,7 +65,7 @@ int run (char *program, char **data, size_t *data_length,
   }  //if the whole bfcode should be run through
 
   return interpreter (program, data, data_length, program_counter,
-                      data_pointer, steps);
+                      data_pointer, steps, -1);
 }
 
 void eval (char **data, size_t *data_length, char **data_pointer,
@@ -105,6 +105,6 @@ void eval (char **data, size_t *data_length, char **data_pointer,
   new_bfcode[counter] = '\0';
 
   interpreter (new_bfcode, data, data_length, &new_program_counter,
-               data_pointer, 0);
+               data_pointer, 0, -1);
 }
 
