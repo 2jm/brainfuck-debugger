@@ -104,7 +104,9 @@ int main (int argc, char *argv[])
 
   int line_size = 100;
 
-  char *line = malloc (sizeof (char) * line_size);
+  // changed by Jonas
+  // malloc is dangerous because the block is uninitialized
+  char *line = calloc (line_size, sizeof (char));
   while (strcmp (line, "quit")) // != 0
   {
     printf ("esp>");
