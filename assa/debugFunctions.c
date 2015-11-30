@@ -18,26 +18,27 @@
 #include "debugFunctions.h"
 #include "interpreter.h"
 
-
-void load(char *filedirectory, char *program)
+void load (char *filedirectory, char *program)
 {
   FILE *file;
-  int character;
-  int loopCounter;
+  int character; // has to be a character to read EOF as -1
+  int loopCounter = 0;
 
-
-  if((file = fopen(filedirectory, "r")) == NULL)
-    printf("Err at reading file");  //check if the file can be read
+  if ((file = fopen (filedirectory, "r")) == NULL)
+  {
+    printf ("Err at reading file\n");  //check if the file can be read
+    //perror ("Error");
+  }
   else
   { //read the file char by char and write it into an array
-    while((character = fgetc(file)) != EOF)
+    while ((character = fgetc (file)) != EOF)
     {
-      if(character == '<' || character == '>' || character == '+' || 
-        character == '-' || character == '.' || character == ',' || 
-        character == '[' || character == ']')
+      if (character == '<' || character == '>' || character == '+' ||
+          character == '-' || character == '.' || character == ',' ||
+          character == '[' || character == ']')
       {
-      program[loopCounter] = character;
-      loopCounter++;        
+        program[loopCounter] = character;
+        loopCounter++;
       }
     }
     program[loopCounter] = '\0';
@@ -45,14 +46,14 @@ void load(char *filedirectory, char *program)
   fclose (file);
 }
 
-
-void run(char *program, char **data, size_t *data_length,char **program_counter,
-        char **data_pointer, int *breakpoints)
+int run (char *program, char **data, size_t *data_length,
+         char **program_counter, char **data_pointer, int *breakpoints)
 {
-  int steps;
+
   int actualPosition;
 
   actualPosition = *program_counter - program;  //difference between start of
+
                                                 //the array and the actual 
   
   /*                                               //position in the bfcode
@@ -63,36 +64,60 @@ void run(char *program, char **data, size_t *data_length,char **program_counter,
   */
   interpreter(program, data, data_length, program_counter, 
                   data_pointer, steps);
+/*
+  //the array and the actual position in the bfcode
 
+  if (breakpoints != NULL)
+  {
+    steps = breakpoints[0] - actualPosition;
+  }
+  else
+  {
+    steps = 0;
+  }  //if the whole bfcode should be run through
+*/
+
+  return interpreter (program, data, data_length, program_counter,
+                      data_pointer, steps, -1);
 }
 
-
-void eval(char **data, size_t *data_length, char **data_pointer, 
-          char *input_bfstring)
+void eval (char **data, size_t *data_length, char **data_pointer,
+           char *input_bfstring)
 {
-  int len;
+  //TODO: load befstring into code-variable (from main) when strlen(code) == 0
+  //TODO: (no program currently in memory)
 
-  int counter;
-  int loopCounter;
+  int counter = 0;
 
-  len = strlen(input_bfstring);
-
-  char new_bfcode[len];
-  char *new_program_counter;
-
-  new_program_counter = new_bfcode; //pointer which points at the start of the
-                                    //new_bfcode array
-  for(loopCounter = 0; loopCounter<len; loopCounter++)
+  size_t len = strlen (input_bfstring);
+  // specification: maxlength of eval input: 80 chars
+  if (len > 80)
   {
-    if(input_bfstring[loopCounter] == '<' || '>' || '+' ||'-' || '.' || ',' || 
-      '[' || ']')
-    {
-      new_bfcode[counter] = input_bfstring[loopCounter];
-      counter++;        
-    }
+    len = 80;
   }
 
-  interpreter(new_bfcode, data, data_length, &new_program_counter, 
-                  data_pointer, 0);
+  char new_bfcode[len];
+  char *new_program_counter = new_bfcode; //pointer which points at the start
+  // of the new_bfcode array
+  int loopCounter;
+  for (loopCounter = 0; loopCounter < len; loopCounter++)
+  {
+    if (input_bfstring[loopCounter] == '<'
+        || input_bfstring[loopCounter] == '>'
+        || input_bfstring[loopCounter] == '+'
+        || input_bfstring[loopCounter] == '-'
+        || input_bfstring[loopCounter] == '.'
+        || input_bfstring[loopCounter] == ','
+        || input_bfstring[loopCounter] == '['
+        || input_bfstring[loopCounter] == ']')
+    {
+      new_bfcode[counter] = input_bfstring[loopCounter];
+      counter++;
+    }
+  }
+  new_bfcode[counter] = '\0';
+
+  interpreter (new_bfcode, data, data_length, &new_program_counter,
+               data_pointer, 0, -1);
 }
 

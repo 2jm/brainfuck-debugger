@@ -46,7 +46,7 @@ void load(char *filedirectory, char *program);
 /// @param *breakpoints array where the positions of the breakpoints are saved
 ///
 //
-void run(char *program, char **data, size_t *data_length,char **program_counter,
+int run(char *program, char **data, size_t *data_length,char **program_counter,
         char **data_pointer, int *breakpoints);
 
 //-----------------------------------------------------------------------------

@@ -2,34 +2,40 @@
 // Created by jonas on 24.11.15.
 //
 
-#include <string.h>
 #include "interpreter.h"
 
+void expandDataSegment (char **data_segment, size_t *data_length);
 
-void expandDataSegment(char **data_segment, size_t *data_length);
-
-int interpreter(char *program, char **data_segment, size_t *data_length,
-                 char **program_counter, char **data_pointer, int steps)
+int interpreter (char *program, char **data_segment, size_t *data_length,
+                 char **program_counter, char **data_pointer, int steps,
+                 int breakpoint)
 {
   int direction = (steps < 0) ? -1 : 1;
 
-  if(steps == 0)
-    steps = -1;   //runs infinitely long
-
-  for(; **program_counter != 0 && steps != 0; steps -= direction)
+  if (steps == 0)
   {
-    switch(**program_counter)
+    steps = -1;
+  }   //runs infinitely long (to the end of the program)
+
+  for (; **program_counter != 0 && steps != 0 && *program_counter != program+breakpoint; steps -= direction)
+  {
+    //printf("%c %d - ", **program_counter, steps);
+    switch (**program_counter)
     {
       case '>':
-        if(++(*data_pointer) > *data_segment + *data_length)
-          expandDataSegment(data_segment, data_length);
+        if (++(*data_pointer) > *data_segment + *data_length)
+        {
+          expandDataSegment (data_segment, data_length);
+        }
 
         *program_counter += direction;
         break;
 
       case '<':
-        if(--(*data_pointer) < *data_segment)
+        if (--(*data_pointer) < *data_segment)
+        {
           (*data_pointer)++;
+        }
 
         *program_counter += direction;
         break;
@@ -47,31 +53,31 @@ int interpreter(char *program, char **data_segment, size_t *data_length,
         break;
 
       case '.':
-        putchar(**data_pointer);
+        putchar (**data_pointer);
 
         *program_counter += direction;
         break;
 
       case ',':
-        **data_pointer = (char) getchar();
+        **data_pointer = (char) getchar ();
 
         *program_counter += direction;
         break;
 
       case '[':
-        if(**data_pointer == 0)
+        if (**data_pointer == 0)
         {
           int loop_counter = 1;
 
           (*program_counter)++;
 
-          while(loop_counter > 0 && **program_counter != 0)
+          while (loop_counter > 0 && **program_counter != 0)
           {
-            if(**program_counter == '[')
+            if (**program_counter == '[')
             {
               loop_counter++;
             }
-            else if(**program_counter == ']')
+            else if (**program_counter == ']')
             {
               loop_counter--;
             }
@@ -79,7 +85,7 @@ int interpreter(char *program, char **data_segment, size_t *data_length,
             (*program_counter)++;
           }
 
-          // The program_counter was increment one to much
+          // The program_counter was increment one too much
           (*program_counter)--;
         }
         else
@@ -89,7 +95,7 @@ int interpreter(char *program, char **data_segment, size_t *data_length,
         break;
 
       case ']':
-        if(**data_pointer == 0)
+        if (**data_pointer == 0)
         {
           (*program_counter)++;
         }
@@ -99,13 +105,13 @@ int interpreter(char *program, char **data_segment, size_t *data_length,
 
           (*program_counter)--;
 
-          while(loop_counter > 0 && *program_counter > program)
+          while (loop_counter > 0 && *program_counter > program)
           {
-            if(**program_counter == ']')
+            if (**program_counter == ']')
             {
               loop_counter++;
             }
-            else if(**program_counter == '[')
+            else if (**program_counter == '[')
             {
               loop_counter--;
             }
@@ -113,24 +119,34 @@ int interpreter(char *program, char **data_segment, size_t *data_length,
             (*program_counter)--;
           }
 
-          // The program_counter was increment one to much
+          // The program_counter was increment one too much
           (*program_counter)++;
         }
         break;
     }
   }
 
-  return 1;
+  if (steps == 0) //program ran the specified steps to the end
+  {
+    return -1;
+  }
+//  else if (steps < 0)
+//  {
+  return 0;
+//  }
+//  else
+//  {
+//    return 1; //error
+//  }
 }
 
-
-void expandDataSegment(char **data_segment, size_t *data_length)
+void expandDataSegment (char **data_segment, size_t *data_length)
 {
   *data_length *= 2;
-  *data_segment = realloc(*data_segment, *data_length);
+  *data_segment = realloc (*data_segment, *data_length);
 
   //set the new memory to 0
-  memset(*data_segment + (*data_length)/2, 0, (*data_length)/2);
+  memset (*data_segment + (*data_length) / 2, 0, (*data_length) / 2);
 }
 
 
