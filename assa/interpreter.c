@@ -12,13 +12,11 @@ int interpreter (InterpreterArguments *interpreter_arguments)
   int direction = (interpreter_arguments->steps_ < 0) ? -1 : 1;
   int break_loop = 0;
 
-  if (interpreter_arguments->steps_ == 0)
-  {
-    interpreter_arguments->steps_ = -1;
-  }   //runs infinitely long (to the end of the program)
+  //if -1 runs infinitely long (to the end of the program)
+  int steps = (interpreter_arguments->steps_ == 0) ? -1 : interpreter_arguments->steps_;
 
-  for (; interpreter_arguments->program_counter_ != 0 && interpreter_arguments->steps_ != 0;
-         interpreter_arguments->steps_ -= direction)
+  for (; *(interpreter_arguments->program_counter_) != 0 && steps != 0;
+         steps -= direction)
   {
     //check if a breakpoint is reached
     int *breakpoint = interpreter_arguments->breakpoints_;
@@ -143,7 +141,7 @@ int interpreter (InterpreterArguments *interpreter_arguments)
     }
   }
 
-  if (interpreter_arguments->steps_ == 0) //program ran the specified steps to the end
+  if (steps == 0) //program ran the specified steps to the end
   {
     return -1;
   }
