@@ -10,17 +10,29 @@ void expandDataSegment (unsigned char **data_segment, size_t *data_length);
 int interpreter (InterpreterArguments *interpreter_arguments)
 {
   int direction = (interpreter_arguments->steps_ < 0) ? -1 : 1;
+  int break_loop = 0;
 
   if (interpreter_arguments->steps_ == 0)
   {
     interpreter_arguments->steps_ = -1;
   }   //runs infinitely long (to the end of the program)
 
-  for (; interpreter_arguments->program_counter_ != 0 && interpreter_arguments->steps_ != 0 
-    /*&& interpreter_arguments->program_counter != program+breakpoint*/; 
+  for (; interpreter_arguments->program_counter_ != 0 && interpreter_arguments->steps_ != 0;
          interpreter_arguments->steps_ -= direction)
   {
-    //printf("%c %d - ", interpreter_arguments->program_counter_, steps);
+    //check if a breakpoint is reached
+    int *breakpoint = interpreter_arguments->breakpoints_;
+    for(; breakpoint < interpreter_arguments->breakpoints_ + interpreter_arguments->breakpoint_count_; breakpoint++)
+    {
+      if(interpreter_arguments->program_ + *breakpoint == interpreter_arguments->program_counter_)
+      {
+        break_loop = 1;
+      }
+    }
+    if(break_loop)
+      break;
+
+    //interpret command
     switch(*(interpreter_arguments->program_counter_))
     {
       case '>':
@@ -125,7 +137,7 @@ int interpreter (InterpreterArguments *interpreter_arguments)
         }
         break;
 
-      //ignore default
+      //should never be reached
       default:
         break;
     }
@@ -135,14 +147,13 @@ int interpreter (InterpreterArguments *interpreter_arguments)
   {
     return -1;
   }
-//  else if (steps < 0)
-//  {
+
+  if (break_loop)
+  {
+    return -2;
+  }
+
   return 0;
-//  }
-//  else
-//  {
-//    return 1; //error
-//  }
 }
 
 void expandDataSegment (unsigned char **data_segment, size_t *data_length)
