@@ -10,6 +10,19 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+
+typedef struct {
+    char *program_;
+    unsigned char *data_segment_;
+    size_t data_length_;
+    char *program_counter_;
+    unsigned char *data_pointer_;
+    int steps_;
+    int *breakpoints_;
+    size_t breakpoint_count_;
+} InterpreterArguments;
+
+
 //------------------------------------------------------------------------------
 ///
 /// Interprets and runs the program code in the program array
@@ -24,8 +37,6 @@
 /// @return 0 if the program ran to the end
 ///         -1 if the program ran the specified steps
 //
-int interpreter(char *program, char **data_segment, size_t *data_length,
-                  char **program_counter, char **data_pointer, int steps,
-                  int breakpoint);
+int interpreter(InterpreterArguments *interpreter_arguments);
 
 #endif //ASSA_INTERPRETER_H

@@ -4,129 +4,134 @@
 
 #include "interpreter.h"
 
-void expandDataSegment (char **data_segment, size_t *data_length);
 
-int interpreter (char *program, char **data_segment, size_t *data_length,
-                 char **program_counter, char **data_pointer, int steps,
-                 int breakpoint)
+void expandDataSegment (unsigned char **data_segment, size_t *data_length);
+
+int interpreter (InterpreterArguments *interpreter_arguments)
 {
-  int direction = (steps < 0) ? -1 : 1;
+  int direction = (interpreter_arguments->steps_ < 0) ? -1 : 1;
 
-  if (steps == 0)
+  if (interpreter_arguments->steps_ == 0)
   {
-    steps = -1;
+    interpreter_arguments->steps_ = -1;
   }   //runs infinitely long (to the end of the program)
 
-  for (; **program_counter != 0 && steps != 0 && *program_counter != program+breakpoint; steps -= direction)
+  for (; interpreter_arguments->program_counter_ != 0 && interpreter_arguments->steps_ != 0 
+    /*&& interpreter_arguments->program_counter != program+breakpoint*/; 
+         interpreter_arguments->steps_ -= direction)
   {
-    //printf("%c %d - ", **program_counter, steps);
-    switch (**program_counter)
+    //printf("%c %d - ", interpreter_arguments->program_counter_, steps);
+    switch(*(interpreter_arguments->program_counter_))
     {
       case '>':
-        if (++(*data_pointer) > *data_segment + *data_length)
+        if (++(interpreter_arguments->data_pointer_) > interpreter_arguments->data_segment_ + interpreter_arguments->data_length_)
         {
-          expandDataSegment (data_segment, data_length);
+          expandDataSegment (&interpreter_arguments->data_segment_, &interpreter_arguments->data_length_);
         }
-
-        *program_counter += direction;
+            
+        interpreter_arguments->program_counter_ += direction;
         break;
 
       case '<':
-        if (--(*data_pointer) < *data_segment)
+        if (--(interpreter_arguments->data_pointer_) < interpreter_arguments->data_segment_)
         {
-          (*data_pointer)++;
+          (interpreter_arguments->data_pointer_)++;
         }
 
-        *program_counter += direction;
+        interpreter_arguments->program_counter_ += direction;
         break;
 
       case '+':
-        (**data_pointer)++;
+        (*interpreter_arguments->data_pointer_)++;
 
-        *program_counter += direction;
+        interpreter_arguments->program_counter_ += direction;
         break;
 
       case '-':
-        (**data_pointer)--;
+        (*interpreter_arguments->data_pointer_)--;
 
-        *program_counter += direction;
+        interpreter_arguments->program_counter_ += direction;
         break;
 
       case '.':
-        putchar (**data_pointer);
+        putchar (*interpreter_arguments->data_pointer_);
 
-        *program_counter += direction;
+        interpreter_arguments->program_counter_ += direction;
         break;
 
       case ',':
-        **data_pointer = (char) getchar ();
+        *interpreter_arguments->data_pointer_ = (unsigned char) getchar ();
 
-        *program_counter += direction;
+        interpreter_arguments->program_counter_ += direction;
         break;
 
       case '[':
-        if (**data_pointer == 0)
+        if (*interpreter_arguments->data_pointer_ == 0)
         {
           int loop_counter = 1;
 
-          (*program_counter)++;
+          interpreter_arguments->program_counter_++;
 
-          while (loop_counter > 0 && **program_counter != 0)
+          while (loop_counter > 0 && interpreter_arguments->program_counter_ != 0)
           {
-            if (**program_counter == '[')
+            if (*(interpreter_arguments->program_counter_) == '[')
             {
               loop_counter++;
             }
-            else if (**program_counter == ']')
+            else if (*(interpreter_arguments->program_counter_) == ']')
             {
               loop_counter--;
             }
 
-            (*program_counter)++;
+            interpreter_arguments->program_counter_++;
           }
 
           // The program_counter was increment one too much
-          (*program_counter)--;
+          interpreter_arguments->program_counter_--;
         }
         else
         {
-          (*program_counter)++;
+          interpreter_arguments->program_counter_++;
         }
         break;
 
       case ']':
-        if (**data_pointer == 0)
+        if (*interpreter_arguments->data_pointer_ == 0)
         {
-          (*program_counter)++;
+          interpreter_arguments->program_counter_++;
         }
         else
         {
           int loop_counter = 1;
 
-          (*program_counter)--;
+          interpreter_arguments->program_counter_--;
 
-          while (loop_counter > 0 && *program_counter > program)
+          while (loop_counter > 0 && interpreter_arguments->program_counter_ > interpreter_arguments->program_)
           {
-            if (**program_counter == ']')
+            if (*(interpreter_arguments->program_counter_) == ']')
             {
               loop_counter++;
             }
-            else if (**program_counter == '[')
+            else if (*(interpreter_arguments->program_counter_) == '[')
             {
               loop_counter--;
             }
 
-            (*program_counter)--;
+            interpreter_arguments->program_counter_--;
           }
 
           // The program_counter was increment one too much
-          (*program_counter)++;
+          interpreter_arguments->program_counter_++;
         }
+        break;
+
+      //ignore default
+      default:
         break;
     }
   }
 
-  if (steps == 0) //program ran the specified steps to the end
+  if (interpreter_arguments->steps_ == 0) //program ran the specified steps to the end
   {
     return -1;
   }
@@ -140,7 +145,7 @@ int interpreter (char *program, char **data_segment, size_t *data_length,
 //  }
 }
 
-void expandDataSegment (char **data_segment, size_t *data_length)
+void expandDataSegment (unsigned char **data_segment, size_t *data_length)
 {
   *data_length *= 2;
   *data_segment = realloc (*data_segment, *data_length);
@@ -152,71 +157,71 @@ void expandDataSegment (char **data_segment, size_t *data_length)
 
 
 
-/*if((**program_counter == '>' && direction == 1) ||
-          (**program_counter == '<' && direction == -1))
+/*if((interpreter_arguments->program_counter_ == '>' && direction == 1) ||
+          (interpreter_arguments->program_counter_ == '<' && direction == -1))
     {
-      if(++(*data_pointer) > *data_segment + *data_length)
+      if(++(interpreter_arguments->data_pointer_) > *data_segment + *data_length)
         expandDataSegment(data_segment, data_length);
     }
-    else if((**program_counter == '<' && direction == 1) ||
-        (**program_counter == '>' && direction == -1))
+    else if((interpreter_arguments->program_counter_ == '<' && direction == 1) ||
+        (interpreter_arguments->program_counter_ == '>' && direction == -1))
     {
-      if(--(*data_pointer) < *data_segment)
-        (*data_pointer)++;
+      if(--(interpreter_arguments->data_pointer_) < *data_segment)
+        (interpreter_arguments->data_pointer_)++;
     }
-    else if((**program_counter == '+' && direction == 1) ||
-          (**program_counter == '-' && direction == -1))
+    else if((interpreter_arguments->program_counter_ == '+' && direction == 1) ||
+          (interpreter_arguments->program_counter_ == '-' && direction == -1))
     {
-      (**data_pointer)++;
+      (*interpreter_arguments->data_pointer_)++;
     }
-    else if((**program_counter == '-' && direction == 1) ||
-          (**program_counter == '+' && direction == -1))
+    else if((interpreter_arguments->program_counter_ == '-' && direction == 1) ||
+          (interpreter_arguments->program_counter_ == '+' && direction == -1))
     {
-      (**data_pointer)--;
+      (*interpreter_arguments->data_pointer_)--;
     }
-    else if(**program_counter == '.')
+    else if(interpreter_arguments->program_counter_ == '.')
     {
 
     }
-    else if(**program_counter == ',' && direction == 1)
+    else if(interpreter_arguments->program_counter_ == ',' && direction == 1)
     {
 
     }
-    else if((**program_counter == '[' && direction == 1) ||
-          (**program_counter == ']' && direction == -1))
+    else if((interpreter_arguments->program_counter_ == '[' && direction == 1) ||
+          (interpreter_arguments->program_counter_ == ']' && direction == -1))
     {
-      if(**data_pointer == 0)
+      if(*interpreter_arguments->data_pointer_ == 0)
       {
         int loop_counter = 1;
 
-        while(loop_counter > 0 && **program_counter != 0)
+        while(loop_counter > 0 && interpreter_arguments->program_counter_ != 0)
         {
-          if(**program_counter == '[')
+          if(interpreter_arguments->program_counter_ == '[')
           {
             loop_counter++;
           }
-          else if(**program_counter == ']')
+          else if(interpreter_arguments->program_counter_ == ']')
           {
             loop_counter--;
           }
 
-          (*program_counter)++;
+          interpreter_arguments->program_counter_++;
         }
 
         // The program_counter was increment one to much
-        (*program_counter)--;
+        interpreter_arguments->program_counter_--;
       }
       else
       {
-        (*program_counter)++;
+        interpreter_arguments->program_counter_++;
       }
     }
-    else if((**program_counter == ']' && direction == 1) ||
-          (**program_counter == '[' && direction == -1))
+    else if((interpreter_arguments->program_counter_ == ']' && direction == 1) ||
+          (interpreter_arguments->program_counter_ == '[' && direction == -1))
     {
-      if(**data_pointer == 0)
+      if(*interpreter_arguments->data_pointer_ == 0)
       {
-        (*program_counter)++;
+        interpreter_arguments->program_counter_++;
       }
       else
       {
@@ -224,19 +229,19 @@ void expandDataSegment (char **data_segment, size_t *data_length)
 
         while(loop_counter > 0 && *program_counter > program)
         {
-          if(**program_counter == ']')
+          if(interpreter_arguments->program_counter_ == ']')
           {
             loop_counter++;
           }
-          else if(**program_counter == '[')
+          else if(interpreter_arguments->program_counter_ == '[')
           {
             loop_counter--;
           }
 
-          (*program_counter)--;
+          interpreter_arguments->program_counter_--;
         }
 
         // The program_counter was increment one to much
-        (*program_counter)++;
+        interpreter_arguments->program_counter_++;
       }
     }*/
