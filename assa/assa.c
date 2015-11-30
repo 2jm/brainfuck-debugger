@@ -83,6 +83,10 @@
 ///
 /// @return always zero
 //
+
+void binary(char number, char *binary_number);
+
+
 int main (int argc, char *argv[])
 {
   //TODO: unsigned char *data_segment =calloc (data_segment_size, sizeof (unsigned char));
@@ -103,6 +107,8 @@ int main (int argc, char *argv[])
   int *breakpoints = NULL;
 
   int line_size = 100;
+
+  char binary_number[8];
 
   // changed by Jonas
   // malloc is dangerous because the block is uninitialized
@@ -233,13 +239,14 @@ int main (int argc, char *argv[])
       {
         //Source: http://stackoverflow
         // .com/questions/6373093/how-to-print-binary-number-via-printf
-        char buffer[33];
+        //char buffer[33];
 
         // comment by Jonas
         // itoa is not a standard function, yet not supported by the gcc
         //itoa (*(data_segment + number), buffer, 2);
-        int binary = strtol(buffer, (char**) NULL, 10);
-        printf ("Binary at %d: %08d\n", number, binary);
+        //int binary = strtol(buffer, (char**) NULL, 10);
+        binary((*data_segment + number), binary_number);
+        printf ("Binary at %d: %s\n", number, binary_number);
         //TODO: try if this is possible with strtol
       }
       else if (strcmp (type, "char") == 0)
@@ -311,4 +318,20 @@ int main (int argc, char *argv[])
   printf ("Bye.\n");
 
   return 0;
+}
+
+
+void binary(char number,char *binary_number)
+{
+  int counter = 1;
+
+  while(number)
+  {
+    binary_number[counter] = number % 2;
+    number = number / 2;
+
+    counter++;
+  }
+
+  binary_number[counter] = '\0';
 }
