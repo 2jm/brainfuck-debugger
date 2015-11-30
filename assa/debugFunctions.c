@@ -23,6 +23,7 @@ void load (char *filedirectory, char *program)
   FILE *file;
   int character; // has to be a character to read EOF as -1
   int loopCounter = 0;
+  int sizeOfProgram;
 
   if ((file = fopen (filedirectory, "r")) == NULL)
   {
@@ -40,6 +41,12 @@ void load (char *filedirectory, char *program)
         program[loopCounter] = character;
         loopCounter++;
       }
+
+      if(loopCounter == sizeOfProgram - 1)
+      {
+        program = realloc(program, sizeOfProgram * 2);
+        sizeOfProgram = sizeOfProgram * 2;
+      }
     }
     program[loopCounter] = '\0';
   }
@@ -49,30 +56,6 @@ void load (char *filedirectory, char *program)
 int run (char *program, char **data, size_t *data_length,
          char **program_counter, char **data_pointer, int *breakpoints)
 {
-
-  //difference between start of
-
-                                                //the array and the actual 
-  
-  /*                                               //position in the bfcode
-  if(breakpoints[0] != 0)
-    steps = breakpoints[0] - actualPosition; //!!!have to insert the loop which resets the Breakpoints-Array!!!
-  else
-    steps = 0;  //if the whole bfcode should be run through
-  */
-
-/*
-  //the array and the actual position in the bfcode
-
-  if (breakpoints != NULL)
-  {
-    steps = breakpoints[0] - actualPosition;
-  }
-  else
-  {
-    steps = 0;
-  }  //if the whole bfcode should be run through
-*/
 
   return interpreter (program, data, data_length, program_counter,
                       data_pointer, steps, breakpoints);
