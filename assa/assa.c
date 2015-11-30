@@ -108,7 +108,7 @@ int main (int argc, char *argv[])
 
   int line_size = 100;
 
-  char binary_number[8];
+  char binary_number[9];
 
   // changed by Jonas
   // malloc is dangerous because the block is uninitialized
@@ -323,7 +323,7 @@ int main (int argc, char *argv[])
 
 void binary(char number,char *binary_number)
 {
-  int counter = 1;
+  int counter = 0;
 
   while(number)
   {
