@@ -50,9 +50,7 @@ int run (char *program, char **data, size_t *data_length,
          char **program_counter, char **data_pointer, int *breakpoints)
 {
 
-  int actualPosition;
-
-  actualPosition = *program_counter - program;  //difference between start of
+  //difference between start of
 
                                                 //the array and the actual 
   
@@ -62,8 +60,7 @@ int run (char *program, char **data, size_t *data_length,
   else
     steps = 0;  //if the whole bfcode should be run through
   */
-  interpreter(program, data, data_length, program_counter, 
-                  data_pointer, steps);
+
 /*
   //the array and the actual position in the bfcode
 
@@ -78,7 +75,7 @@ int run (char *program, char **data, size_t *data_length,
 */
 
   return interpreter (program, data, data_length, program_counter,
-                      data_pointer, steps, -1);
+                      data_pointer, steps, breakpoints);
 }
 
 void eval (char **data, size_t *data_length, char **data_pointer,
