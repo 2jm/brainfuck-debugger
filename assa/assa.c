@@ -89,11 +89,9 @@ void binary(char number, char *binary_number);
 
 int main (int argc, char *argv[])
 {
-  //TODO: unsigned char *data_segment =calloc (data_segment_size, sizeof (unsigned char));
-
   size_t data_segment_size = 1024; // 1024 Bytes (0 - 1023)
   // init datasegment with 0s
-  char *data_segment = calloc (data_segment_size, sizeof (char));
+  unsigned char *data_segment = calloc (data_segment_size, sizeof (unsigned char));
   // init datasegment with 0s - variant 2
   //char *data_segment = malloc (data_segment_size * sizeof (char));
   //memset(data_segment, 0, data_segment_size * sizeof(char));
@@ -107,6 +105,8 @@ int main (int argc, char *argv[])
   int *breakpoints = NULL;
 
   int line_size = 100;
+
+  int program_loaded = 0;
 
   char binary_number[9];
 
@@ -138,7 +138,7 @@ int main (int argc, char *argv[])
     else if (strcmp (cmd, "load") == 0)
     {
       // data reset
-      memset (data_segment, 0, data_segment_size * sizeof (char));
+      memset (data_segment, 0, data_segment_size * sizeof (unsigned char));
 
       cmd = strtok (NULL, " ");
       load (cmd, code);
@@ -169,6 +169,7 @@ int main (int argc, char *argv[])
     {
       char *bfstring = strtok (NULL, " ");
       eval (&data_segment, &data_segment_size, &data_pointer, bfstring);
+      program_loaded = 1;
     }
     else if (strcmp (cmd, "break") == 0)
     {
@@ -209,7 +210,7 @@ int main (int argc, char *argv[])
 //      run (code, &data_segment, &data_segment_size, &code_position,
 //           &data_pointer, breakpoints); //== 0
     }
-    else if (strcmp (cmd, "memory") == 0)
+    else if (strcmp (cmd, "memory") == 0 && !program_loaded)
     {
       if (strlen (code) == 0)
       {
@@ -243,7 +244,7 @@ int main (int argc, char *argv[])
       }
       else if (strcmp (type, "char") == 0)
       {
-        printf ("Character at %d: %c\n", number, *(data_segment + number));
+        printf ("Char at %d: %c\n", number, *(data_segment + number));
       }
     }
     else if (strcmp (cmd, "show") == 0)
@@ -263,7 +264,7 @@ int main (int argc, char *argv[])
       // at code position + offset
       printf ("%.*s\n", size, code + (code_position - code));
     }
-    else if (strcmp (cmd, "change") == 0)
+    else if (strcmp (cmd, "change") == 0 && !program_loaded)
     {
       if (strlen (code) == 0)
       {
