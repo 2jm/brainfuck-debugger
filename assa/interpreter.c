@@ -52,15 +52,15 @@ int interpreter (InterpreterArguments *interpreter_arguments)
     if (break_loop)
       break;
 
-    printf("%lu %c: ", interpreter_arguments->program_counter_ - interpreter_arguments->program_, *(interpreter_arguments->program_counter_));
+    //printf("%lu %c: ", interpreter_arguments->program_counter_ - interpreter_arguments->program_, *(interpreter_arguments->program_counter_));
 
     // ------------  >  ------------
     if (*(interpreter_arguments->program_counter_) == move_forward)
     {
       if (++(interpreter_arguments->data_pointer_) >
-          interpreter_arguments->data_segment_ + interpreter_arguments->data_length_)
+          interpreter_arguments->data_segment_ + *(interpreter_arguments->data_length_))
       {
-        expandDataSegment(&interpreter_arguments->data_segment_, &interpreter_arguments->data_length_);
+        expandDataSegment(&interpreter_arguments->data_segment_, interpreter_arguments->data_length_);
       }
       interpreter_arguments->program_counter_ += direction;
     }
@@ -99,7 +99,7 @@ int interpreter (InterpreterArguments *interpreter_arguments)
     // ------------  .  ------------
     else if (*(interpreter_arguments->program_counter_) == '.')
     {
-      putchar(*interpreter_arguments->data_pointer_ + 48);
+      putchar(*interpreter_arguments->data_pointer_);
 
       interpreter_arguments->program_counter_ += direction;
     }
@@ -129,7 +129,7 @@ int interpreter (InterpreterArguments *interpreter_arguments)
 
     interpreter_arguments->step_counter_ += direction;
 
-    printf(" step: %d\n", interpreter_arguments->step_counter_-1);
+    //printf(" step: %d\n", interpreter_arguments->step_counter_-1);
   }
 
   if(direction == -1)
@@ -155,7 +155,7 @@ void resetInterpreterArguments(InterpreterArguments *interpreter_arguments)
   interpreter_arguments->jumps_.count_ = 0;
 
   memset (interpreter_arguments->data_segment_, 0,
-          interpreter_arguments->data_length_);
+          *interpreter_arguments->data_length_);
 
   interpreter_arguments->data_pointer_ = interpreter_arguments->data_segment_;
 
@@ -163,14 +163,16 @@ void resetInterpreterArguments(InterpreterArguments *interpreter_arguments)
 }
 
 
-InterpreterArguments getUsableInterpreterArgumentsStruct()
+InterpreterArguments getUsableInterpreterArgumentsStruct(
+  unsigned char *data_segment, size_t *data_length,
+  unsigned char *data_pointer)
 {
   InterpreterArguments interpreter_arguments = {
     NULL,
+    data_segment,
+    data_length,
     NULL,
-    1024,
-    NULL,
-    NULL,
+    data_pointer,
     0,
     NULL,
     0,
@@ -178,9 +180,14 @@ InterpreterArguments getUsableInterpreterArgumentsStruct()
     {0, 0, NULL}
   };
 
-  interpreter_arguments.data_segment_ =
-    calloc(interpreter_arguments.data_length_, sizeof(char));
-  interpreter_arguments.data_pointer_ = interpreter_arguments.data_segment_;
+  if(data_segment == NULL)
+  {
+    interpreter_arguments.data_length_ = malloc(sizeof(size_t));
+    *interpreter_arguments.data_length_ = 1024;
+    interpreter_arguments.data_segment_ =
+      calloc(*interpreter_arguments.data_length_, sizeof(char));
+    interpreter_arguments.data_pointer_ = interpreter_arguments.data_segment_;
+  }
 
   interpreter_arguments.jumps_.allocated_memory_ = 100;
   interpreter_arguments.jumps_.array_ = (Jump *) malloc(100 * sizeof(Jump));
