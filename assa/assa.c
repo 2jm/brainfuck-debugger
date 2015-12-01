@@ -89,11 +89,9 @@ void binary(char number, char *binary_number);
 
 int main (int argc, char *argv[])
 {
-  //TODO: unsigned char *data_segment =calloc (data_segment_size, sizeof (unsigned char));
-
   size_t data_segment_size = 1024; // 1024 Bytes (0 - 1023)
   // init datasegment with 0s
-  char *data_segment = calloc (data_segment_size, sizeof (char));
+  unsigned char *data_segment = calloc (data_segment_size, sizeof (unsigned char));
   // init datasegment with 0s - variant 2
   //char *data_segment = malloc (data_segment_size * sizeof (char));
   //memset(data_segment, 0, data_segment_size * sizeof(char));
@@ -140,7 +138,7 @@ int main (int argc, char *argv[])
     else if (strcmp (cmd, "load") == 0)
     {
       // data reset
-      memset (data_segment, 0, data_segment_size * sizeof (char));
+      memset (data_segment, 0, data_segment_size * sizeof (unsigned char));
 
       cmd = strtok (NULL, " ");
       load (cmd, code);
