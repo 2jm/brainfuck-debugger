@@ -226,13 +226,9 @@ int main (int argc, char *argv[])
       int number = (int) strtol (cmd, (char **) NULL, 10); // 10 = base of digit
       char *type = strtok (NULL, " ");
 
-      //TODO: how to handle if type is not given?
+      //TODO: how to handle if type is not given? DONE
 
-      if (strcmp (type, "hex") == 0)
-      {
-        printf ("Hex at %d: %x\n", number, *(data_segment + number));
-      }
-      else if (strcmp (type, "int") == 0)
+      if (strcmp (type, "int") == 0)
       {
         printf ("Integer at %d: %d\n", number, *(data_segment + number));
       }
@@ -245,6 +241,10 @@ int main (int argc, char *argv[])
       else if (strcmp (type, "char") == 0)
       {
         printf ("Char at %d: %c\n", number, *(data_segment + number));
+      }
+      else if (strcmp (type, "hex") == 0 || type == NULL)
+      {
+        printf ("Hex at %d: %x\n", number, *(data_segment + number));
       }
     }
     else if (strcmp (cmd, "show") == 0)

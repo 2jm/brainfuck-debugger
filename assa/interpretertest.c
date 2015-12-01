@@ -1,18 +1,43 @@
 #include "interpreter.h"
 
+
+void dumpDataSegment(unsigned char* data, size_t length)
+{
+  size_t i;
+  for(i=0; i<length; i++)
+  {
+    printf("%d ", data[i]);
+  }
+  printf("\n");
+}
+
 int main()
 {
-  char *code = "++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>.";
-  size_t data_segment_size = 1024;
-  char *data_segment = calloc(data_segment_size, sizeof(char));
+  InterpreterArguments arguments = {
+    //"++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>.",
+    ">+++[>+++[<<+.>>-]<-]>[++]++",
+    NULL,
+    1024,
+    NULL,
+    NULL,
+    0,
+    NULL,
+    0,
+    0,
+    {0, 0, NULL}
+  };
 
-  char *program_counter = code;
-  char *data_pointer = data_segment;
+  arguments.data_segment_ = calloc(arguments.data_length_, sizeof(char));
+  arguments.program_counter_ = arguments.program_;
+  arguments.data_pointer_ = arguments.data_segment_;
 
-  printf("Run interpreter:\n");
+  arguments.steps_ = 0;
 
-  interpreter(code, &data_segment, &data_segment_size, &program_counter,
-              &data_pointer, 0);
+  interpreter(&arguments);
+
+  printf("\n");
+
+  dumpDataSegment(arguments.data_segment_, 3);
 
   return 0;
 }
