@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include "interpreter.h"
 
 //-----------------------------------------------------------------------------
 ///
@@ -30,7 +31,7 @@
 /// @param *program Array in which the bf-code gets written
 ///
 //
-void load(char *filedirectory, char *program);
+void load(char *filedirectory, InterpreterArguments *interpreter_arguments);
 
 //-----------------------------------------------------------------------------
 ///
@@ -78,6 +79,7 @@ void eval(char **data, size_t *data_length, char **data_pointer,
 /// @return 0   if no bracket is opened or closed
 ///
 //
-int check_code(char *programArray, int character,int *position);
+int check_code(InterpreterArguments *interpreter_arguments, int character,
+              int *position);
 
 #endif //ASSA_DEBUGFUNCTIONS_H
