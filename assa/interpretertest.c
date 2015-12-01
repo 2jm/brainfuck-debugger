@@ -1,6 +1,6 @@
 #include "interpreter.h"
 
-
+//cool for debugging the interpreter, you don't need this
 void dumpDataSegment(unsigned char* data, size_t length)
 {
   size_t i;
@@ -13,31 +13,20 @@ void dumpDataSegment(unsigned char* data, size_t length)
 
 int main()
 {
-  InterpreterArguments arguments = {
-    //"++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>.",
-    ">+++[>+++[<<+.>>-]<-]>[++]++",
-    NULL,
-    1024,
-    NULL,
-    NULL,
-    0,
-    NULL,
-    0,
-    0,
-    {0, 0, NULL}
-  };
+  // The code comes from a file or the stdin
+  //char *code = "++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>.",
+  char *code = ">+++[>+++[<<+.>>-]<-]>[++]++";
 
-  arguments.data_segment_ = calloc(arguments.data_length_, sizeof(char));
-  arguments.program_counter_ = arguments.program_;
-  arguments.data_pointer_ = arguments.data_segment_;
+  // Get an InterpreterArguments struct
+  InterpreterArguments arguments = getUseableInterpreterArgumentsStruct();
 
-  arguments.steps_ = 0;
+  // This is usually done in the load or eval function:
+  arguments.program_ = malloc(500 * sizeof(char));  //allocate memory for the code
+  strcpy(arguments.program_, code);                 //copy code into struct
+  arguments.program_counter_ = arguments.program_;  //set program_counter_ to the beginning of the code
 
+  // Run the interpreter
   interpreter(&arguments);
-
-  printf("\n");
-
-  dumpDataSegment(arguments.data_segment_, 3);
 
   return 0;
 }

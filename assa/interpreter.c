@@ -154,7 +154,7 @@ void resetInterpreterArguments(InterpreterArguments *interpreter_arguments)
   interpreter_arguments->step_counter_ = 0;
   interpreter_arguments->jumps_.count_ = 0;
 
-  memset (*(interpreter_arguments->data_segment_), 0,
+  memset (interpreter_arguments->data_segment_, 0,
           interpreter_arguments->data_length_);
 
   interpreter_arguments->data_pointer_ = interpreter_arguments->data_segment_;
