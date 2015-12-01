@@ -115,7 +115,7 @@ int main (int argc, char *argv[])
   char *line = calloc (line_size, sizeof (char));
   while (strcmp (line, "quit")) // != 0
   {
-    printf ("esp>");
+    printf ("esp> ");
     // read from the console till '\n'
     fgets (line, line_size, stdin);
     // fgets liest am Ende \n und dann \0 ein. Überschreibe also das \n.
