@@ -237,17 +237,9 @@ int main (int argc, char *argv[])
       }
       else if (strcmp (type, "bin") == 0)
       {
-        //Source: http://stackoverflow
-        // .com/questions/6373093/how-to-print-binary-number-via-printf
-        //char buffer[33];
-
-        // comment by Jonas
-        // itoa is not a standard function, yet not supported by the gcc
-        //itoa (*(data_segment + number), buffer, 2);
-        //int binary = strtol(buffer, (char**) NULL, 10);
-        binary((*data_segment + number), binary_number);
+        //calculating the binary number
+        binary((*data_segment + number), binary_number);  
         printf ("Binary at %d: %s\n", number, binary_number);
-        //TODO: try if this is possible with strtol
       }
       else if (strcmp (type, "char") == 0)
       {
