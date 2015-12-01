@@ -54,7 +54,7 @@ int interpreter(InterpreterArguments *interpreter_arguments);
 ///
 /// The data_segment is 1024 bytes big an allocated
 //
-InterpreterArguments getUseableInterpreterArgumentsStruct();
+InterpreterArguments getUsableInterpreterArgumentsStruct();
 
 //------------------------------------------------------------------------------
 ///

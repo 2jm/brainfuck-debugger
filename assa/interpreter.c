@@ -163,7 +163,7 @@ void resetInterpreterArguments(InterpreterArguments *interpreter_arguments)
 }
 
 
-InterpreterArguments getUseableInterpreterArgumentsStruct()
+InterpreterArguments getUsableInterpreterArgumentsStruct()
 {
   InterpreterArguments interpreter_arguments = {
     NULL,

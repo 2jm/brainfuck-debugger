@@ -18,7 +18,7 @@ int main()
   char *code = ">+++[>+++[<<+.>>-]<-]>[++]++";
 
   // Get an InterpreterArguments struct
-  InterpreterArguments arguments = getUseableInterpreterArgumentsStruct();
+  InterpreterArguments arguments = getUsableInterpreterArgumentsStruct();
 
   // This is usually done in the load or eval function:
   arguments.program_ = malloc(500 * sizeof(char));  //allocate memory for the code
