@@ -64,4 +64,20 @@ int run(char *program, char **data, size_t *data_length,char **program_counter,
 void eval(char **data, size_t *data_length, char **data_pointer, 
           char *input_bfstring);
 
+//-----------------------------------------------------------------------------
+///
+/// Checking single character if it is bfCode and checking if bracket is
+/// opened or closed
+///
+/// @param *programArray  array in which the correct code is written
+/// @param character the sign which should be checked
+/// @param *position the position where in the array the char will be written
+///
+/// @return 1   if a bracket is opened
+/// @return -1  if a bracket is closed
+/// @return 0   if no bracket is opened or closed
+///
+//
+int check_code(char *programArray, int character,int *position);
+
 #endif //ASSA_DEBUGFUNCTIONS_H
