@@ -164,7 +164,7 @@ int main (int argc, char *argv[])
     }
     else if (strcmp (cmd, "run") == 0)
     {
-      if (strlen (code) == 0)
+      if (program_loaded != LOADED_FROM_FILE)
       {
         printf ("[ERR] no program loaded\n");
         continue;
