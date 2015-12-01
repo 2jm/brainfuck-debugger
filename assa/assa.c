@@ -89,6 +89,9 @@ void binary(char number, char *binary_number);
 
 int main (int argc, char *argv[])
 {
+  //first step of changing to the argument struct
+  InterpreterArguments arguments = getUsableInterpreterArgumentsStruct(NULL);
+  
   size_t data_segment_size = 1024; // 1024 Bytes (0 - 1023)
   // init datasegment with 0s
   unsigned char *data_segment = calloc (data_segment_size, sizeof (unsigned char));
