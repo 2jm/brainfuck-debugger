@@ -21,9 +21,8 @@
 void load (char *filedirectory, char *program)
 {
   FILE *file;
-  char *buffer;
   int character; // has to be a integer to read EOF as -1
-  int loopCounter = 0;
+  int loopCounter = 0; //just for the while-loop
   int bracketCounter = 0;
   int sizeOfProgram = 1024;
   int *position;
@@ -41,20 +40,20 @@ void load (char *filedirectory, char *program)
     while ((character = fgetc (file)) != EOF)
     { 
       //is 0 if #opened brackets == #closed brackets
-      bracketCounter = bracketCounter + check_code(program, character, position);
+      bracketCounter += check_code (program, character, position);
 
       //resizes the programmArray if the file is to long
-      if(*position == sizeOfProgram - 1)
+      if (*position == sizeOfProgram - 1)
       {
-        program = realloc(program, sizeOfProgram * 2);
+        program = realloc (program, sizeOfProgram * 2);
         sizeOfProgram = sizeOfProgram * 2;
       }
 
     }
     program[loopCounter] = '\0';  //end of string
 
-    if(bracketCounter != 0)
-      pritntf("[ERR] parsing of input failed\n")
+    if (bracketCounter != 0)
+      pritntf ("[ERR] parsing of input failed\n")
   }
 
   fclose (file);
@@ -94,21 +93,21 @@ void eval (char **data, size_t *data_length, char **data_pointer,
   int loopCounter;  //just for the for-loop
   for (loopCounter = 0; loopCounter < len; loopCounter++)
   {
-    bracketCounter = 
-    bracketCounter + check_code(new_bfcode, input_bfstring[loopCounter], position);
+    bracketCounter += 
+    check_code (new_bfcode, input_bfstring[loopCounter], position);
   }
   new_bfcode[counter] = '\0'; //end of string
 
   //if #opened brackets is not #closed brackets
-  if(bracketCounter != 0)
-    pritntf("[ERR] parsing of input failed\n");
+  if (bracketCounter != 0)
+    pritntf ("[ERR] parsing of input failed\n");
   else
     interpreter (new_bfcode, data, data_length, &new_program_counter,
-               data_pointer, 0, -1);
+                 data_pointer, 0, -1);
 }
 
 
-int check_code(char *programArray, int character,int *position)
+int check_code (char *programArray, int character,int *position)
 {
   if (character == '<' || character == '>' || character == '+' ||
       character == '-' || character == '.' || character == ',' ||
