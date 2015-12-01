@@ -22,6 +22,10 @@
 #include <string.h>
 #include "interpreter.h"
 
+#define NOT_LOADED       0
+#define LOADED_FROM_FILE 1
+#define LOADED_FROM_EVAL 2
+
 //-----------------------------------------------------------------------------
 ///
 /// Loading the code character by character out of a file and write it into an 
@@ -30,8 +34,9 @@
 /// @param *filedirectory directory of the codefile to fetch
 /// @param *program Array in which the bf-code gets written
 ///
+/// @return 0 when not loaded (error), LOADED_FROM_FILE when loaded
 //
-void load(char *filedirectory, InterpreterArguments *interpreter_arguments);
+int load(char *filedirectory, InterpreterArguments *interpreter_arguments);
 
 //-----------------------------------------------------------------------------
 ///

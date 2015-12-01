@@ -84,6 +84,15 @@
 /// @return always zero
 //
 
+#define NOT_LOADED       0
+#define LOADED_FROM_FILE 1
+#define LOADED_FROM_EVAL 2
+
+void breakProgram(int program_loaded, InterpreterArguments *arguments);
+void step(int program_loaded, InterpreterArguments *arguments);
+void memory(int program_loaded, char *data_segment);
+void show(int program_loaded, char *code);
+void change(int program_loaded, char *data_segment);
 void binary(char number, char *binary_number);
 
 
@@ -143,7 +152,7 @@ int main (int argc, char *argv[])
       memset (data_segment, 0, data_segment_size * sizeof (unsigned char));
 
       cmd = strtok (NULL, " ");
-      load (cmd, &arguments);
+      program_loaded = load (cmd, &arguments);
     }
     else if (strcmp (cmd, "run") == 0)
     {
@@ -171,136 +180,27 @@ int main (int argc, char *argv[])
     {
       char *bfstring = strtok (NULL, " ");
       eval (&data_segment, &data_segment_size, &data_pointer, bfstring);
-      program_loaded = 1;
+      program_loaded = LOADED_FROM_EVAL;
     }
     else if (strcmp (cmd, "break") == 0)
     {
-      if (strlen (code) == 0)
-      {
-        printf ("[ERR] no program loaded\n");
-        continue;
-      }
-      cmd = strtok (NULL, " ");
-      int number = strtol (cmd, (char **) NULL, 10);
-
-      int *new_mem = realloc (breakpoints, ++breakpoint_count * sizeof (int));
-      if (new_mem != NULL)
-      {
-        breakpoints = new_mem;
-      }
-      else
-      {
-        free (breakpoints);
-        printf ("[ERR] out of memory\\n");
-      }
-      breakpoints[breakpoint_count - 1] = number;
-
-      //TODO: sort breakpoints here ascending
+      breakProgram(program_loaded, &arguments);
     }
     else if (strcmp (cmd, "step") == 0)
     {
-      if (strlen (code) == 0)
-      {
-        printf ("[ERR] no program loaded\n");
-        continue;
-      }
-      cmd = strtok (NULL, " ");
-      int steps = (int) strtol(cmd, (char**)NULL, 10);
-
-      interpreter(code, &data_segment, &data_segment_size, &code_position,
-                  &data_pointer, steps, -1);
-//      run (code, &data_segment, &data_segment_size, &code_position,
-//           &data_pointer, breakpoints); //== 0
+      step(program_loaded, &arguments);
     }
-    else if (strcmp (cmd, "memory") == 0 && !program_loaded)
+    else if (strcmp (cmd, "memory") == 0)
     {
-      if (strlen (code) == 0)
-      {
-        printf ("[ERR] no program loaded\n");
-        continue;
-      }
-      cmd = strtok (NULL, " ");
-      if (cmd == NULL)
-      {
-        printf ("Hex at %d: %x\n", 0, *(data_segment));
-        continue;
-      }
-      int number = (int) strtol (cmd, (char **) NULL, 10); // 10 = base of digit
-      char *type = strtok (NULL, " ");
-
-      //TODO: how to handle if type is not given? DONE
-
-      if (strcmp (type, "int") == 0)
-      {
-        printf ("Integer at %d: %d\n", number, *(data_segment + number));
-      }
-      else if (strcmp (type, "bin") == 0)
-      {
-        //calculating the binary number
-        binary((*data_segment + number), binary_number);  
-        printf ("Binary at %d: %s\n", number, binary_number);
-      }
-      else if (strcmp (type, "char") == 0)
-      {
-        printf ("Char at %d: %c\n", number, *(data_segment + number));
-      }
-      else if (strcmp (type, "hex") == 0 || type == NULL)
-      {
-        printf ("Hex at %d: %x\n", number, *(data_segment + number));
-      }
+      memory(program_loaded, data_segment);
     }
     else if (strcmp (cmd, "show") == 0)
     {
-      if (strlen (code) == 0)
-      {
-        printf ("[ERR] no program loaded\n");
-        continue;
-      }
-      cmd = strtok (NULL, " ");
-      // 10 is default size
-      int size = cmd != NULL ? strtol (cmd, (char **) NULL, 10) : 10;
-
-      // Source: http://stackoverflow
-      // .com/questions/4214314/get-a-substring-of-a-char
-      // print "size" characters from target string
-      // at code position + offset
-      printf ("%.*s\n", size, code + (code_position - code));
+      show(program_loaded, arguments.program_);
     }
-    else if (strcmp (cmd, "change") == 0 && !program_loaded)
+    else if (strcmp (cmd, "change") == 0)
     {
-      if (strlen (code) == 0)
-      {
-        printf ("[ERR] no program loaded\n");
-        continue;
-      }
-      cmd = strtok (NULL, " ");
-      char *end_ptr;
-      int number = strtol (cmd, &end_ptr, 10);
-      if (end_ptr == cmd) // conversion failed
-      {
-        // default number: current position
-        number = 0;
-      }
-
-      cmd = strtok (NULL, " ");
-      int hex_byte = (int) strtol (cmd, &end_ptr, 16);
-      if (end_ptr == cmd) // conversion failed
-      {
-        // default hex_byte: 0x0
-        hex_byte = 0;
-      }
-
-      //TODO: Debug
-      printf ("Read: hex: 0x%x - int: %i\n", hex_byte, hex_byte);
-
-      //Specification: Die Hex Eingabe soll nicht mit 0x beginnen!
-      // otherwise:
-      // int hex_byte = (int)strtol(cmd, NULL, 0);
-      //http://stackoverflow.com/questions/10156409/convert-hex-string-char-to-int
-
-      //TODO: funktioniert nicht richtig (change 9f wird zu ffffff9f anstatt ff, 4f
-      // stimmt noch - gibt aus: 4f
-      *(data_segment + number) = hex_byte;
+      change(program_loaded, data_segment);
     }
   }
   free (line);
@@ -314,6 +214,142 @@ int main (int argc, char *argv[])
 
   return 0;
 }
+
+
+
+void breakProgram(int program_loaded, InterpreterArguments *arguments)
+{
+  if (program_loaded != LOADED_FROM_FILE)
+  {
+    printf ("[ERR] no program loaded\n");
+    continue;
+  }
+  cmd = strtok (NULL, " ");
+  int number = strtol (cmd, (char **) NULL, 10);
+
+  int *new_mem = realloc (breakpoints, ++breakpoint_count * sizeof (int));
+  if (new_mem != NULL)
+  {
+    breakpoints = new_mem;
+  }
+  else
+  {
+    free (breakpoints);
+    printf ("[ERR] out of memory\\n");
+  }
+  breakpoints[breakpoint_count - 1] = number;
+
+  //TODO: sort breakpoints here ascending
+}
+
+void step(int program_loaded, InterpreterArguments *arguments)
+{
+  if (program_loaded != LOADED_FROM_FILE)
+  {
+    printf ("[ERR] no program loaded\n");
+    return;
+  }
+  cmd = strtok (NULL, " ");
+  arguments->steps_ = (int) strtol(cmd, (char**)NULL, 10);
+
+  interpreter(arguments);
+}
+
+void memory(int program_loaded, char *data_segment)
+{
+  if (program_loaded == NOT_LOADED)
+  {
+    printf ("[ERR] no program loaded\n");
+    return;
+  }
+  cmd = strtok (NULL, " ");
+  if (cmd == NULL)
+  {
+    printf ("Hex at %d: %x\n", 0, *(data_segment));
+    return;
+  }
+
+
+  int number = (int) strtol (cmd, (char **) NULL, 10); // 10 = base of digit
+  char *type = strtok (NULL, " ");
+
+  if (strcmp (type, "int") == 0)
+  {
+    printf ("Integer at %d: %d\n", number, *(data_segment + number));
+  }
+  else if (strcmp (type, "bin") == 0)
+  {
+    //calculating the binary number
+    binary((*data_segment + number), binary_number);
+    printf ("Binary at %d: %s\n", number, binary_number);
+  }
+  else if (strcmp (type, "char") == 0)
+  {
+    printf ("Char at %d: %c\n", number, *(data_segment + number));
+  }
+  else if (strcmp (type, "hex") == 0 || type == NULL)
+  {
+    printf ("Hex at %d: %x\n", number, *(data_segment + number));
+  }
+}
+
+
+void show(int program_loaded, char *code)
+{
+  if (program_loaded != LOADED_FROM_FILE)
+  {
+    printf ("[ERR] no program loaded\n");
+    return;
+  }
+  cmd = strtok (NULL, " ");
+  // 10 is default size
+  int size = cmd != NULL ? strtol (cmd, (char **) NULL, 10) : 10;
+
+  // Source: http://stackoverflow
+  // .com/questions/4214314/get-a-substring-of-a-char
+  // print "size" characters from target string
+  // at code position + offset
+  printf ("%.*s\n", size, code + (code_position - code));
+}
+
+
+void change(int program_loaded, char *data_segment)
+{
+  if (program_loaded == NOT_LOADED)
+  {
+    printf ("[ERR] no program loaded\n");
+    continue;
+  }
+  cmd = strtok (NULL, " ");
+  char *end_ptr;
+  int number = strtol (cmd, &end_ptr, 10);
+  if (end_ptr == cmd) // conversion failed
+  {
+    // default number: current position
+    number = 0;
+  }
+
+  cmd = strtok (NULL, " ");
+  int hex_byte = (int) strtol (cmd, &end_ptr, 16);
+  if (end_ptr == cmd) // conversion failed
+  {
+    // default hex_byte: 0x0
+    hex_byte = 0;
+  }
+
+  //TODO: Debug
+  printf ("Read: hex: 0x%x - int: %i\n", hex_byte, hex_byte);
+
+  //Specification: Die Hex Eingabe soll nicht mit 0x beginnen!
+  // otherwise:
+  // int hex_byte = (int)strtol(cmd, NULL, 0);
+  //http://stackoverflow.com/questions/10156409/convert-hex-string-char-to-int
+
+  //TODO: funktioniert nicht richtig (change 9f wird zu ffffff9f anstatt ff, 4f
+  // stimmt noch - gibt aus: 4f
+  *(data_segment + number) = hex_byte;
+}
+
 
 
 void binary(char number,char *binary_number)

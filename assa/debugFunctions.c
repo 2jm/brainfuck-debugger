@@ -18,7 +18,7 @@
 #include "debugFunctions.h"
 #include "interpreter.h"
 
-void load (char *filedirectory, InterpreterArguments *arguments)
+int load (char *filedirectory, InterpreterArguments *arguments)
 {
   resetInterpreterArguments(arguments);
   FILE *file;
@@ -32,7 +32,7 @@ void load (char *filedirectory, InterpreterArguments *arguments)
   if ((file = fopen (filedirectory, "r")) == NULL)
   {
     printf ("[ERR] reading the file failed\n");  //check if the file can be read
-    //perror ("Error");
+    return NOT_LOADED;
   }
   else
   { 
@@ -57,6 +57,8 @@ void load (char *filedirectory, InterpreterArguments *arguments)
   }
 
   fclose (file);
+
+  return LOADED_FROM_FILE;
 }
 
 
