@@ -14,11 +14,11 @@ void dumpDataSegment(unsigned char* data, size_t length)
 int main()
 {
   // The code comes from a file or the stdin
-  //char *code = "++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>.",
-  char *code = ">+++[>+++[<<+.>>-]<-]>[++]++";
+  char *code = "++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>.";
+  //char *code = ">+++[>+++[<<+.>>-]<-]>[++]++";
 
   // Get an InterpreterArguments struct
-  InterpreterArguments arguments = getUsableInterpreterArgumentsStruct();
+  InterpreterArguments arguments = getUsableInterpreterArgumentsStruct(NULL, NULL, NULL);
 
   // This is usually done in the load or eval function:
   arguments.program_ = malloc(500 * sizeof(char));  //allocate memory for the code
@@ -27,6 +27,8 @@ int main()
 
   // Run the interpreter
   interpreter(&arguments);
+
+  dumpDataSegment(arguments.data_segment_, 3);
 
   return 0;
 }
