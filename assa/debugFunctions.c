@@ -18,11 +18,11 @@
 #include "debugFunctions.h"
 #include "interpreter.h"
 
-void load (char *filedirectory, char *program)
+void load (char *filedirectory, InterpreterArguments *arguments)
 {
+  resetInterpreterArguments(arguments);
   FILE *file;
   int character; // has to be a integer to read EOF as -1
-  int loopCounter = 0; //just for the while-loop
   int bracketCounter = 0;
   int sizeOfProgram = 1024;
   int *position;
@@ -40,20 +40,20 @@ void load (char *filedirectory, char *program)
     while ((character = fgetc (file)) != EOF)
     { 
       //is 0 if #opened brackets == #closed brackets
-      bracketCounter += check_code (program, character, position);
+      bracketCounter += check_code (arguments, character, position);
 
       //resizes the programmArray if the file is to long
       if (*position == sizeOfProgram - 1)
       {
-        program = realloc (program, sizeOfProgram * 2);
+        arguments->program_ = realloc (arguments->program_, sizeOfProgram * 2);
         sizeOfProgram = sizeOfProgram * 2;
       }
 
     }
-    program[loopCounter] = '\0';  //end of string
+    arguments->program_[*position] = '\0';  //end of string
 
     if (bracketCounter != 0)
-      pritntf ("[ERR] parsing of input failed\n")
+      pritntf ("[ERR] parsing of input failed\n");
   }
 
   fclose (file);
@@ -107,13 +107,13 @@ void eval (char **data, size_t *data_length, char **data_pointer,
 }
 
 
-int check_code (char *programArray, int character,int *position)
+int check_code (InterpreterArguments *arguments, int character,int *position)
 {
   if (character == '<' || character == '>' || character == '+' ||
       character == '-' || character == '.' || character == ',' ||
       character == '[' || character == ']')
   {
-    programArray[position] = character;
+    arguments->program_[position] = character;
     position++;
   } 
 
