@@ -98,9 +98,16 @@ void binary(char number, char *binary_number);
 
 int main (int argc, char *argv[])
 {
-  //first step of changing to the argument struct
-  InterpreterArguments arguments = getUsableInterpreterArgumentsStruct(NULL);
-  size_t data_segment_size = 1024; // 1024 Bytes (0 - 1023)
+  //create the interpreter argument struct
+  InterpreterArguments arguments =
+    getUsableInterpreterArgumentsStruct(NULL, NULL, NULL);
+
+
+  /*
+   * ALL THIS STUFF IS MADE IN THE FUNCTION getUsableInterpreterArgumentsStruct
+   * SEE interpretertest.c for example
+   */
+  /*size_t data_segment_size = 1024; // 1024 Bytes (0 - 1023)
   // init datasegment with 0s
   unsigned char *data_segment = calloc (data_segment_size, sizeof (unsigned char));
   // init datasegment with 0s - variant 2
@@ -113,7 +120,8 @@ int main (int argc, char *argv[])
   char *code_position = code;
 
   int breakpoint_count = 0;
-  int *breakpoints = NULL;
+  int *breakpoints = NULL;*/
+
 
   int line_size = 100;
 

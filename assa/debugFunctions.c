@@ -53,7 +53,7 @@ int load (char *filedirectory, InterpreterArguments *arguments)
     arguments->program_[*position] = '\0';  //end of string
 
     if (bracketCounter != 0)
-      pritntf ("[ERR] parsing of input failed\n");
+      printf ("[ERR] parsing of input failed\n");
   }
 
   fclose (file);
