@@ -52,8 +52,9 @@ int load(char *filedirectory, InterpreterArguments *interpreter_arguments);
 /// @param *breakpoints array where the positions of the breakpoints are saved
 ///
 //
-int run(char *program, char **data, size_t *data_length,char **program_counter,
-        char **data_pointer, int *breakpoints);
+int run(InterpreterArguments *interpreter_arguments);
+//char *program, char **data, size_t *data_length,char **program_counter,
+//char **data_pointer, int *breakpoints);
 
 //-----------------------------------------------------------------------------
 ///
@@ -67,8 +68,9 @@ int run(char *program, char **data, size_t *data_length,char **program_counter,
 ///         funtionccall
 ///
 //
-void eval(char **data, size_t *data_length, char **data_pointer, 
-          char *input_bfstring);
+void eval(InterpreterArguments *arguments, char *input_bfstring);
+//char **data, size_t *data_length, char **data_pointer,
+//char *input_bfstring);
 
 //-----------------------------------------------------------------------------
 ///

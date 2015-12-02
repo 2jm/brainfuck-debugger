@@ -154,7 +154,7 @@ void resetInterpreterArguments(InterpreterArguments *interpreter_arguments)
   interpreter_arguments->jumps_.count_ = 0;
 
   memset (*interpreter_arguments->data_segment_, 0,
-          *interpreter_arguments->data_length_);
+          *interpreter_arguments->data_length_ * sizeof(unsigned char));
 
   *interpreter_arguments->data_pointer_ = *interpreter_arguments->data_segment_;
 
@@ -168,6 +168,7 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
 {
   InterpreterArguments interpreter_arguments = {
     NULL,
+    0,
     data_segment,
     data_length,
     NULL,
@@ -186,7 +187,7 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
 
     interpreter_arguments.data_segment_ = malloc(sizeof(unsigned char*));
     *interpreter_arguments.data_segment_ =
-      calloc(*interpreter_arguments.data_length_, sizeof(char));
+      calloc(*interpreter_arguments.data_length_, sizeof(unsigned char));
 
     interpreter_arguments.data_pointer_ = malloc(sizeof(unsigned char*));
     *interpreter_arguments.data_pointer_ = *interpreter_arguments.data_segment_;

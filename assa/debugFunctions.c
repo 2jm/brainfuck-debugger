@@ -25,9 +25,10 @@ int load (char *filedirectory, InterpreterArguments *arguments)
   int character; // has to be a integer to read EOF as -1
   int bracketCounter = 0;
   int sizeOfProgram = 1024;
-  int *position;
-
+  int *position = malloc(sizeof(int *));
   *position = 0;
+
+  arguments->program_ = malloc(sizeOfProgram);
 
   if ((file = fopen (filedirectory, "r")) == NULL)
   {
@@ -35,22 +36,24 @@ int load (char *filedirectory, InterpreterArguments *arguments)
     return NOT_LOADED;
   }
   else
-  { 
+  {
     //read the file char by char and write it into an array
     while ((character = fgetc (file)) != EOF)
-    { 
+    {
       //is 0 if #opened brackets == #closed brackets
-      bracketCounter += check_code (arguments, character, position);
+      bracketCounter += check_code (arguments, character, &position);
 
       //resizes the programmArray if the file is to long
-      if (*position == sizeOfProgram - 1)
+      if (position == sizeOfProgram - 1)
       {
-        arguments->program_ = realloc (arguments->program_, sizeOfProgram * 2);
-        sizeOfProgram = sizeOfProgram * 2;
+        sizeOfProgram *= 2;
+        arguments->program_ = realloc (arguments->program_, sizeOfProgram);
       }
-
     }
     arguments->program_[*position] = '\0';  //end of string
+    arguments->program_length_ = sizeOfProgram * sizeof(char);
+    //set program_counter_ to the beginning of the code
+    arguments->program_counter_ = arguments->program_;
 
     if (bracketCounter != 0)
       printf ("[ERR] parsing of input failed\n");
@@ -65,47 +68,44 @@ int load (char *filedirectory, InterpreterArguments *arguments)
 /**********************
 RUN() WILL BE DELETED
 **********************/
-int run (char *program, char **data, size_t *data_length,
-         char **program_counter, char **data_pointer, int *breakpoints)
+int run (InterpreterArguments *interpreter_arguments)
 {
 
-  return interpreter (program, data, data_length, program_counter,
-                      data_pointer, steps, breakpoints);
+  return interpreter (interpreter_arguments);
 }
 
 
-void eval (char **data, size_t *data_length, char **data_pointer,
-           char *input_bfstring)
+void eval (InterpreterArguments *arguments, char *input_bfstring)
 {
   int bracketCounter = 0;
-  int *position;
-  int counter = 0;
+  int *position = malloc(sizeof(int *));
+  *position = 0;
   size_t len = strlen (input_bfstring);
-  
+
   // specification: maxlength of eval input: 80 chars
   if (len > 80)
   {
     len = 80;
   }
 
-  char new_bfcode[len];
-  char *new_program_counter = new_bfcode; //pointer which points at the start
-                                          // of the new_bfcode array
-  
+  arguments->program_ = malloc(len);
+  arguments->program_length_ = len * sizeof(char);
+  //set program_counter_ to the beginning of the code
+  arguments->program_counter_ = arguments->program_;
+
   int loopCounter;  //just for the for-loop
   for (loopCounter = 0; loopCounter < len; loopCounter++)
   {
-    bracketCounter += 
-    check_code (new_bfcode, input_bfstring[loopCounter], position);
+    bracketCounter +=
+      check_code (arguments, input_bfstring[loopCounter], position);
   }
-  new_bfcode[counter] = '\0'; //end of string
+  arguments->program_[*position] = '\0';  //end of string
 
   //if #opened brackets is not #closed brackets
   if (bracketCounter != 0)
-    pritntf ("[ERR] parsing of input failed\n");
+    printf ("[ERR] parsing of input failed\n");
   else
-    interpreter (new_bfcode, data, data_length, &new_program_counter,
-                 data_pointer, 0, -1);
+    interpreter (arguments);
 }
 
 
@@ -115,9 +115,9 @@ int check_code (InterpreterArguments *arguments, int character,int *position)
       character == '-' || character == '.' || character == ',' ||
       character == '[' || character == ']')
   {
-    arguments->program_[position] = character;
-    position++;
-  } 
+    arguments->program_[*position] = (char)character;
+    (*position)++;
+  }
 
   if (character == '[')
     return 1;
