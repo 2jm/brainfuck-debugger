@@ -43,7 +43,7 @@ int load (char *filedirectory, InterpreterArguments *arguments)
       //is 0 if #opened brackets == #closed brackets
       bracket_counter += check_code (arguments, character, position);
 
-      //resizes the programmArray if the file is to long
+      //resizes the programmArray if the file is too long
       if (*position == program_size - 1)
       {
         program_size *= 2;

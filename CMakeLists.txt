@@ -8,6 +8,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 set(SOURCE_FILES assa/assa.c assa/interpreter.c assa/interpreter.h
         assa/debugFunctions.c assa/debugFunctions.h)
 
+# bonus only
+#set(SOURCE_FILES assa/bio.c)
+
 # test interpreter only
 #set(SOURCE_FILES assa/interpretertest.c assa/interpreter.c assa/interpreter.h)
 
