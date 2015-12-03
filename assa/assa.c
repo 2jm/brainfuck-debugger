@@ -103,9 +103,10 @@ int main(int argc, char *argv[])
 
         // TODO: what should happen, if run is called twice?
         // breakpoint reset
-        memset(arguments.breakpoints_, 0, breakpoint_size * sizeof(int));
+        //memset(arguments.breakpoints_, 0, breakpoint_size * sizeof(int));
+        free(arguments.breakpoints_);
         arguments.breakpoints_ = NULL;
-        arguments.breakpoint_count_ = 0;
+        breakpoint_size = 10;
       }
       else // stopped at breakpoint
       {
@@ -202,10 +203,11 @@ void breakProgram(int program_loaded, InterpreterArguments *arguments,
     }
   }
 
-  // check if breakpoints has enough memory allocated
+  // check if breakpoints has any memory allocated
   if (arguments->breakpoints_ == NULL)
   {
     arguments->breakpoints_ = calloc(breakpoint_size, sizeof(int));
+    arguments->breakpoint_count_ = 0;
   }
   // extend breakpoints memory if needed
   if (arguments->breakpoint_count_ + 1 > breakpoint_size)
