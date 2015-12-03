@@ -23,12 +23,12 @@ int load (char *filedirectory, InterpreterArguments *arguments)
   resetInterpreterArguments(arguments);
   FILE *file;
   int character; // has to be a integer to read EOF as -1
-  int bracketCounter = 0;
-  int sizeOfProgram = 1024;
+  int bracket_counter = 0;
+  size_t program_size = 1024;
   int *position = malloc(sizeof(int *));
   *position = 0;
 
-  arguments->program_ = malloc(sizeOfProgram);
+  arguments->program_ = malloc(program_size);
 
   if ((file = fopen (filedirectory, "r")) == NULL)
   {
@@ -41,21 +41,21 @@ int load (char *filedirectory, InterpreterArguments *arguments)
     while ((character = fgetc (file)) != EOF)
     {
       //is 0 if #opened brackets == #closed brackets
-      bracketCounter += check_code (arguments, character, &position);
+      bracket_counter += check_code (arguments, character, position);
 
       //resizes the programmArray if the file is to long
-      if (position == sizeOfProgram - 1)
+      if (*position == program_size - 1)
       {
-        sizeOfProgram *= 2;
-        arguments->program_ = realloc (arguments->program_, sizeOfProgram);
+        program_size *= 2;
+        arguments->program_ = realloc (arguments->program_, program_size);
       }
     }
     arguments->program_[*position] = '\0';  //end of string
-    arguments->program_length_ = sizeOfProgram * sizeof(char);
+    arguments->program_length_ = program_size * sizeof(char);
     //set program_counter_ to the beginning of the code
     arguments->program_counter_ = arguments->program_;
 
-    if (bracketCounter != 0)
+    if (bracket_counter != 0)
       printf ("[ERR] parsing of input failed\n");
   }
 
@@ -77,7 +77,7 @@ int run (InterpreterArguments *interpreter_arguments)
 
 void eval (InterpreterArguments *arguments, char *input_bfstring)
 {
-  int bracketCounter = 0;
+  int bracket_counter = 0;
   int *position = malloc(sizeof(int *));
   *position = 0;
   size_t len = strlen (input_bfstring);
@@ -96,13 +96,13 @@ void eval (InterpreterArguments *arguments, char *input_bfstring)
   int loopCounter;  //just for the for-loop
   for (loopCounter = 0; loopCounter < len; loopCounter++)
   {
-    bracketCounter +=
+    bracket_counter +=
       check_code (arguments, input_bfstring[loopCounter], position);
   }
   arguments->program_[*position] = '\0';  //end of string
 
   //if #opened brackets is not #closed brackets
-  if (bracketCounter != 0)
+  if (bracket_counter != 0)
     printf ("[ERR] parsing of input failed\n");
   else
     interpreter (arguments);

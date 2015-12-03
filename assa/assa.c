@@ -15,7 +15,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "debugFunctions.h"
-#include "interpreter.h"
 
 #define NOT_LOADED       0
 #define LOADED_FROM_FILE 1
@@ -25,9 +24,10 @@ void breakProgram(int program_loaded, InterpreterArguments *arguments);
 
 void step(int program_loaded, InterpreterArguments *arguments);
 
-void memory(int program_loaded, unsigned char *data_segment, unsigned char *data_pointer_);
+void memory(int program_loaded, unsigned char *data_segment,
+            unsigned char *data_pointer_);
 
-void show(int program_loaded, char *program, char *program_counter);
+void show(int program_loaded, char *program_counter);
 
 void change(int program_loaded, unsigned char *data_segment);
 
@@ -52,27 +52,37 @@ int main(int argc, char *argv[])
   // allocate char array for console input
   size_t line_size = 100;
   char *line = calloc(line_size, sizeof(char));
+
+  if (argc > 2)
+  {
+    int argument;
+    for (argument = 1; argument < argc - 1; argument++)
+    {
+      if(strcmp(argv[argument], "-e") == 0)
+      {
+        char *path = argv[argument + 1];
+
+        load(path, &arguments);
+        run(&arguments);
+
+        return 0;
+
+        // code reset
+        //memset(arguments.program_, 0, arguments.program_length_);
+      }
+    }
+  }
+
   // print first command line line output
   printf("esp> ");
-  while (fgets(line, line_size, stdin) != 0 && strcmp(line, "quit\n"))
+  while (fgets(line, (int) line_size, stdin) != 0 && strcmp(line, "quit\n"))
   {
     // fgets adds at the end '\n\0'. Therefore override '\n' with '\0'
     line[strlen(line) - 1] = '\0';
 
     char *cmd;
     cmd = strtok(line, "  ");
-    //TODO: -e soll laut Spezifikation als Argument übergeben werden, nicht
-    //TODO: in der Command line!
-    if (strcmp(cmd, "-e") == 0)
-    {
-      cmd = strtok(NULL, " ");
-      load(cmd, &arguments);
-      run(&arguments);
-
-      // code reset
-      memset(arguments.program_, 0, arguments.program_length_);
-    }
-    else if (strcmp(cmd, "load") == 0)
+    if (strcmp(cmd, "load") == 0)
     {
       cmd = strtok(NULL, " ");
       program_loaded = load(cmd, &arguments);
@@ -116,11 +126,12 @@ int main(int argc, char *argv[])
     }
     else if (strcmp(cmd, "memory") == 0)
     {
-      memory(program_loaded, *arguments.data_segment_, *arguments.data_pointer_);
+      memory(program_loaded, *arguments.data_segment_,
+             *arguments.data_pointer_);
     }
     else if (strcmp(cmd, "show") == 0)
     {
-      show(program_loaded, arguments.program_, arguments.program_counter_);
+      show(program_loaded, arguments.program_counter_);
     }
     else if (strcmp(cmd, "change") == 0)
     {
@@ -179,7 +190,8 @@ void step(int program_loaded, InterpreterArguments *arguments)
   interpreter(arguments);
 }
 
-void memory(int program_loaded, unsigned char *data_segment, unsigned char *data_pointer_)
+void memory(int program_loaded, unsigned char *data_segment,
+            unsigned char *data_pointer_)
 {
   if (program_loaded == NOT_LOADED)
   {
@@ -189,7 +201,8 @@ void memory(int program_loaded, unsigned char *data_segment, unsigned char *data
   char *number_input = strtok(NULL, " ");
   if (number_input == NULL)
   {
-    printf("Hex at %d: %x\n", (int)(data_pointer_ - data_segment), *data_pointer_);
+    printf("Hex at %d: %x\n", (int) (data_pointer_ - data_segment),
+           *data_pointer_);
     return;
   }
   // 10 = base of digit
@@ -218,7 +231,7 @@ void memory(int program_loaded, unsigned char *data_segment, unsigned char *data
   }
 }
 
-void show(int program_loaded, char *program, char *program_counter)
+void show(int program_loaded, char *program_counter)
 {
   if (program_loaded != LOADED_FROM_FILE)
   {
@@ -233,8 +246,7 @@ void show(int program_loaded, char *program, char *program_counter)
   // .com/questions/4214314/get-a-substring-of-a-char
   // print "size" characters from target string
   // at code position + offset
-  printf("%.*s\n", size, program_counter); //
-  //program + (program_counter - program)code + (code_position - code)
+  printf("%.*s\n", size, program_counter);
 }
 
 void change(int program_loaded, unsigned char *data_segment)
@@ -271,7 +283,7 @@ void binary(char number, char *binary_number, int digits)
 
   while (number)
   {
-    if(number % 2 == 0)
+    if (number % 2 == 0)
     {
       binary_number[counter] = '0';
     }
