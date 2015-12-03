@@ -5,9 +5,11 @@
 //
 // Group: 13020 study assistant Angela Promitzer
 //
-// Authors: Johannes Kopf 1431505, Jonas Juffinger, Matthias Klotz
+// Authors: Jonas Juffinger 1531253
+//          Matthias Klotz  1530653
+//          Johannes Kopf   1431505
 //
-// Latest Changes: 20.11.2015 (by Johannes Kopf)
+// Latest Changes: 03.12.2015 (by Johannes Kopf)
 //-----------------------------------------------------------------------------
 //
 
@@ -15,12 +17,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include "debugFunctions.h"
+#include "interpreter.h"
 
 #define NOT_LOADED       0
 #define LOADED_FROM_FILE 1
 #define LOADED_FROM_EVAL 2
 
-void breakProgram(int program_loaded, InterpreterArguments *arguments);
+void breakProgram(int program_loaded, InterpreterArguments *arguments,
+                  int breakpoint_size);
 
 void step(int program_loaded, InterpreterArguments *arguments);
 
@@ -49,6 +53,7 @@ int main(int argc, char *argv[])
   InterpreterArguments arguments =
     getUsableInterpreterArgumentsStruct(NULL, NULL, NULL);
   int program_loaded = NOT_LOADED;
+  int breakpoint_size = 10;
   // allocate char array for console input
   size_t line_size = 100;
   char *line = calloc(line_size, sizeof(char));
@@ -58,7 +63,7 @@ int main(int argc, char *argv[])
     int argument;
     for (argument = 1; argument < argc - 1; argument++)
     {
-      if(strcmp(argv[argument], "-e") == 0)
+      if (strcmp(argv[argument], "-e") == 0)
       {
         char *path = argv[argument + 1];
 
@@ -66,9 +71,6 @@ int main(int argc, char *argv[])
         run(&arguments);
 
         return 0;
-
-        // code reset
-        //memset(arguments.program_, 0, arguments.program_length_);
       }
     }
   }
@@ -99,15 +101,22 @@ int main(int argc, char *argv[])
         // code reset
         memset(arguments.program_, 0, arguments.program_length_);
 
+        // TODO: what should happen, if run is called twice?
         // breakpoint reset
-        // TODO: check if breakpoint_count already includes the "* sizeof(int)" or not
-        memset(arguments.breakpoints_, 0,
-               arguments.breakpoint_count_ * sizeof(int));
+        memset(arguments.breakpoints_, 0, breakpoint_size * sizeof(int));
         arguments.breakpoints_ = NULL;
+        arguments.breakpoint_count_ = 0;
       }
       else // stopped at breakpoint
       {
-        //TODO: remove breakpoint from breakpoint list
+        // shift all elements from breakpoints array one position left
+        // this removes the first element/breakpoint
+        int breakp;
+        for (breakp = 0; breakp < arguments.breakpoint_count_ - 1; breakp++)
+        {
+          arguments.breakpoints_[breakp] = arguments.breakpoints_[breakp + 1];
+        }
+        arguments.breakpoint_count_--;
       }
     }
     else if (strcmp(cmd, "eval") == 0)
@@ -118,7 +127,7 @@ int main(int argc, char *argv[])
     }
     else if (strcmp(cmd, "break") == 0)
     {
-      breakProgram(program_loaded, &arguments);
+      breakProgram(program_loaded, &arguments, breakpoint_size);
     }
     else if (strcmp(cmd, "step") == 0)
     {
@@ -150,17 +159,67 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-void breakProgram(int program_loaded, InterpreterArguments *arguments)
+// Source: http://openbook.rheinwerk-verlag.de/c_von_a_bis_z/022_c_algorithmen_003.htm#mje2d240f1f56f6186232f65773fc37070
+void bubbleSort(int *array, int elemente)
+{
+  int i, temp;
+
+  while (elemente--)
+    for (i = 1; i <= elemente; i++)
+      if (array[i - 1] > array[i])
+      {
+        temp = array[i];
+        array[i] = array[i - 1];
+        array[i - 1] = temp;
+      }
+}
+
+void breakProgram(int program_loaded, InterpreterArguments *arguments,
+                  int breakpoint_size)
 {
   if (program_loaded != LOADED_FROM_FILE)
   {
     printf("[ERR] no program loaded\n");
     return;
   }
-  //TODO: write code for breakpoints here
-//  cmd = strtok (NULL, " ");
-//  int number = strtol (cmd, (char **) NULL, 10);
-//
+  // get breakpoint position
+  char *number_input = strtok(NULL, " ");
+  int number = strtol(number_input, (char **) NULL, 10);
+
+  // allow only positive breakpoints
+  if(number < 0)
+  {
+    return;
+  }
+
+  // if breakpoint with same number is already there, don't add it
+  int breakp = 0;
+  for (breakp = 0; breakp < arguments->breakpoint_count_; breakp++)
+  {
+    if (arguments->breakpoints_[breakp] == number)
+    {
+      return;
+    }
+  }
+
+  // check if breakpoints has enough memory allocated
+  if (arguments->breakpoints_ == NULL)
+  {
+    arguments->breakpoints_ = calloc(breakpoint_size, sizeof(int));
+  }
+  // extend breakpoints memory if needed
+  if (arguments->breakpoint_count_ + 1 > breakpoint_size)
+  {
+    breakpoint_size *= 2;
+    arguments->breakpoints_ = realloc(arguments->breakpoints_,
+                                      breakpoint_size * sizeof(int));
+  }
+
+  // add next breakpoint
+  arguments->breakpoints_[arguments->breakpoint_count_] = number;
+  arguments->breakpoint_count_++;
+
+//TODO: change every realloc to free the memory if NULL is returned:
 //  int *new_mem = realloc (breakpoints, ++breakpoint_count * sizeof (int));
 //  if (new_mem != NULL)
 //  {
@@ -171,9 +230,9 @@ void breakProgram(int program_loaded, InterpreterArguments *arguments)
 //    free (breakpoints);
 //    printf ("[ERR] out of memory\\n");
 //  }
-//  breakpoints[breakpoint_count - 1] = number;
 
-  //TODO: sort breakpoints here ascending
+  // sort breakpoints ascending (eg. 3 - 7 - 10)
+  bubbleSort(arguments->breakpoints_, arguments->breakpoint_count_);
   return;
 }
 

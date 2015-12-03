@@ -11,7 +11,7 @@
 //
 // Authors: Jonas Juffinger 1531253
 //          Matthias Klotz  1530653
-//          Johannes Kopf   <Matriculum Number>
+//          Johannes Kopf   1431505
 //-----------------------------------------------------------------------------
 //
 
