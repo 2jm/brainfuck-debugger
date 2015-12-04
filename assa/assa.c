@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
         printf("[ERR] no program loaded\n");
         continue;
       }
-      if (run(&arguments) == 0) // ran to the end
+      if (run(&arguments) == REGULAR_STOP) // ran to the end
       {
         // code reset
         memset(arguments.program_, 0, arguments.program_length_);
@@ -123,6 +123,8 @@ int main(int argc, char *argv[])
       {
         // shift all elements from breakpoints array one position left
         // this removes the first element/breakpoint
+
+        //TODO do this with memmov();
         int breakp;
         for (breakp = 0; breakp < arguments.breakpoint_count_ - 1; breakp++)
         {
@@ -135,7 +137,10 @@ int main(int argc, char *argv[])
     {
       char *bfstring = strtok(NULL, " ");
       eval(&evalArguments, bfstring);
-      program_loaded = LOADED_FROM_EVAL;
+
+      //only set the program_loaded variable if no program was loaded yet
+      if(program_loaded == NOT_LOADED)
+        program_loaded = LOADED_FROM_EVAL;
     }
     else if (strcmp(cmd, "break") == 0)
     {
