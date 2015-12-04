@@ -18,7 +18,7 @@
 #include "debugFunctions.h"
 #include "interpreter.h"
 
-int load (char *filedirectory, InterpreterArguments *arguments)
+int load (char *filedirectory, InterpreterArguments *arguments, int bonus)
 {
   resetInterpreterArguments(arguments);
   FILE *file;
@@ -41,7 +41,7 @@ int load (char *filedirectory, InterpreterArguments *arguments)
     while ((character = fgetc (file)) != EOF)
     {
       //is 0 if #opened brackets == #closed brackets
-      bracket_counter += check_code (arguments, character, position);
+      bracket_counter += check_code (arguments, character, position, bonus);
 
       //resizes the programmArray if the file is too long
       if (*position == program_size - 1)
@@ -75,7 +75,7 @@ int run (InterpreterArguments *interpreter_arguments)
 }
 
 
-void eval (InterpreterArguments *arguments, char *input_bfstring)
+void eval (InterpreterArguments *arguments, char *input_bfstring, int bonus)
 {
   int bracket_counter = 0;
   int *position = malloc(sizeof(int *));
@@ -97,7 +97,7 @@ void eval (InterpreterArguments *arguments, char *input_bfstring)
   for (loopCounter = 0; loopCounter < len; loopCounter++)
   {
     bracket_counter +=
-      check_code (arguments, input_bfstring[loopCounter], position);
+      check_code (arguments, input_bfstring[loopCounter], position, bonus);
   }
   arguments->program_[*position] = '\0';  //end of string
 
@@ -109,11 +109,17 @@ void eval (InterpreterArguments *arguments, char *input_bfstring)
 }
 
 
-int check_code (InterpreterArguments *arguments, int character,int *position)
+int check_code (InterpreterArguments *arguments, int character,int *position,
+                int bonus)
 {
   if (character == '<' || character == '>' || character == '+' ||
       character == '-' || character == '.' || character == ',' ||
       character == '[' || character == ']')
+  {
+    arguments->program_[*position] = (char)character;
+    (*position)++;
+  }
+  else if((bonus && character == '&') || (bonus && character == '%'))
   {
     arguments->program_[*position] = (char)character;
     (*position)++;

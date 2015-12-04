@@ -59,17 +59,23 @@ int main(int argc, char *argv[])
   // allocate char array for console input
   size_t line_size = 100;
   char *line = calloc(line_size, sizeof(char));
+  int bonus = 0;
 
   if (argc > 2)
   {
     int argument;
     for (argument = 1; argument < argc - 1; argument++)
     {
+      if (strcmp(argv[argument], "-b") == 0)
+      {
+        bonus = 1;
+      }
+
       if (strcmp(argv[argument], "-e") == 0)
       {
         char *path = argv[argument + 1];
 
-        load(path, &arguments);
+        load(path, &arguments, bonus);
         run(&arguments);
 
         return 0;
@@ -89,7 +95,7 @@ int main(int argc, char *argv[])
     if (strcmp(cmd, "load") == 0)
     {
       cmd = strtok(NULL, " ");
-      program_loaded = load(cmd, &arguments);
+      program_loaded = load(cmd, &arguments, bonus);
     }
     else if (strcmp(cmd, "run") == 0)
     {
@@ -125,7 +131,7 @@ int main(int argc, char *argv[])
     else if (strcmp(cmd, "eval") == 0)
     {
       char *bfstring = strtok(NULL, " ");
-      eval(&arguments, bfstring);
+      eval(&arguments, bfstring, bonus);
       program_loaded = LOADED_FROM_EVAL;
     }
     else if (strcmp(cmd, "break") == 0)

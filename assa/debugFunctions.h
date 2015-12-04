@@ -36,7 +36,8 @@
 ///
 /// @return 0 when not loaded (error), LOADED_FROM_FILE when loaded
 //
-int load(char *filedirectory, InterpreterArguments *interpreter_arguments);
+int load(char *filedirectory, InterpreterArguments *interpreter_arguments,
+         int bonus);
 
 //-----------------------------------------------------------------------------
 ///
@@ -68,7 +69,7 @@ int run(InterpreterArguments *interpreter_arguments);
 ///         funtionccall
 ///
 //
-void eval(InterpreterArguments *arguments, char *input_bfstring);
+void eval(InterpreterArguments *arguments, char *input_bfstring, int bonus);
 //char **data, size_t *data_length, char **data_pointer,
 //char *input_bfstring);
 
@@ -87,6 +88,6 @@ void eval(InterpreterArguments *arguments, char *input_bfstring);
 ///
 //
 int check_code(InterpreterArguments *interpreter_arguments, int character,
-              int *position);
+              int *position, int bonus);
 
 #endif //ASSA_DEBUGFUNCTIONS_H
