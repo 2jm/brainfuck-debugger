@@ -12,6 +12,9 @@ int jumpToMatchingBrace(InterpreterArguments *interpreter_arguments);
 
 void insertJump(Jumps *jumps, Jump jump);
 
+void freePointer(void **pointer);
+void freeDoublePointer(void ***pointer);
+
 
 int interpreter (InterpreterArguments *interpreter_arguments)
 {
@@ -193,12 +196,38 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
   }
 
   interpreter_arguments.jumps_.allocated_memory_ = 100;
-  interpreter_arguments.jumps_.array_ = (Jump *) malloc(100 * sizeof(Jump));
+  interpreter_arguments.jumps_.array_ = (Jump*) malloc(100 * sizeof(Jump));
 
   return interpreter_arguments;
 }
 
 
+void freeInterpreterArguments(InterpreterArguments *interpreterArguments)
+{
+  freePointer((void**) &(interpreterArguments->program_));
+  freeDoublePointer((void***) &(interpreterArguments->data_segment_));
+  freePointer((void**) &(interpreterArguments->data_length_));
+  freePointer((void**) &(interpreterArguments->data_pointer_));
+  freePointer((void**) &(interpreterArguments->breakpoints_));
+  freePointer((void**) &(interpreterArguments->jumps_.array_));
+}
+
+void freePointer(void **pointer)
+{
+  free(*pointer);
+  *pointer = NULL;
+}
+
+void freeDoublePointer(void ***pointer)
+{
+  if(*pointer != NULL)
+  {
+    freePointer(*pointer);
+
+    free(*pointer);
+    *pointer = NULL;
+  }
+}
 
 
 void expandDataSegment (unsigned char **data_segment, size_t *data_length)

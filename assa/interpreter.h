@@ -72,4 +72,11 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
 //
 void resetInterpreterArguments(InterpreterArguments *interpreter_arguments);
 
+void freeInterpreterArguments(InterpreterArguments *interpreterArguments);
+
+
+void freePointer(void **pointer);
+
+void freeDoublePointer(void ***pointer);
+
 #endif //ASSA_INTERPRETER_H

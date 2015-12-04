@@ -18,19 +18,18 @@
 #include "debugFunctions.h"
 #include "interpreter.h"
 
-int load (char *filedirectory, InterpreterArguments *arguments)
+int load (char *file_directory, InterpreterArguments *arguments)
 {
   resetInterpreterArguments(arguments);
   FILE *file;
   int character; // has to be a integer to read EOF as -1
   int bracket_counter = 0;
   size_t program_size = 1024;
-  int *position = malloc(sizeof(int *));
-  *position = 0;
+  int position = 0;
 
   arguments->program_ = malloc(program_size);
 
-  if ((file = fopen (filedirectory, "r")) == NULL)
+  if ((file = fopen (file_directory, "r")) == NULL)
   {
     printf ("[ERR] reading the file failed\n");  //check if the file can be read
     return NOT_LOADED;
@@ -41,16 +40,16 @@ int load (char *filedirectory, InterpreterArguments *arguments)
     while ((character = fgetc (file)) != EOF)
     {
       //is 0 if #opened brackets == #closed brackets
-      bracket_counter += check_code (arguments, character, position);
+      bracket_counter += check_code (arguments, character, &position);
 
       //resizes the programmArray if the file is too long
-      if (*position == program_size - 1)
+      if (position == program_size - 1)
       {
         program_size *= 2;
         arguments->program_ = realloc (arguments->program_, program_size);
       }
     }
-    arguments->program_[*position] = '\0';  //end of string
+    arguments->program_[position] = '\0';  //end of string
     arguments->program_length_ = program_size * sizeof(char);
     //set program_counter_ to the beginning of the code
     arguments->program_counter_ = arguments->program_;
