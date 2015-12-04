@@ -215,8 +215,11 @@ void freeInterpreterArguments(InterpreterArguments *interpreterArguments)
 
 void freePointer(void **pointer)
 {
-  free(*pointer);
-  *pointer = NULL;
+  if(*pointer != NULL)
+  {
+    free(*pointer);
+    *pointer = NULL;
+  }
 }
 
 void freeDoublePointer(void ***pointer)

@@ -77,8 +77,7 @@ int run (InterpreterArguments *interpreter_arguments)
 void eval (InterpreterArguments *arguments, char *input_bfstring)
 {
   int bracket_counter = 0;
-  int *position = malloc(sizeof(int *));
-  *position = 0;
+  int position = 0;
   size_t len = strlen (input_bfstring);
 
   // specification: maxlength of eval input: 80 chars
@@ -87,8 +86,8 @@ void eval (InterpreterArguments *arguments, char *input_bfstring)
     len = 80;
   }
 
-  arguments->program_ = malloc(len);
-  arguments->program_length_ = len * sizeof(char);
+  arguments->program_length_ = len+1;
+  arguments->program_ = malloc(arguments->program_length_ * sizeof(char));
   //set program_counter_ to the beginning of the code
   arguments->program_counter_ = arguments->program_;
 
@@ -96,15 +95,18 @@ void eval (InterpreterArguments *arguments, char *input_bfstring)
   for (loopCounter = 0; loopCounter < len; loopCounter++)
   {
     bracket_counter +=
-      check_code (arguments, input_bfstring[loopCounter], position);
+      check_code (arguments, input_bfstring[loopCounter], &position);
   }
-  arguments->program_[*position] = '\0';  //end of string
+  arguments->program_[position] = '\0';  //end of string
 
   //if #opened brackets is not #closed brackets
   if (bracket_counter != 0)
     printf ("[ERR] parsing of input failed\n");
   else
-    interpreter (arguments);
+  {
+    interpreter(arguments);
+    freePointer((void**) &arguments->program_);
+  }
 }
 
 
