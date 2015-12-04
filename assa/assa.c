@@ -37,6 +37,8 @@ void change(int program_loaded, unsigned char *data_segment);
 
 void binary(char number, char *binary_number, int digits);
 
+int cmpfunc (const void *a, const void *b);
+
 //------------------------------------------------------------------------------
 ///
 /// The main program.
@@ -160,21 +162,6 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-// Source: http://openbook.rheinwerk-verlag.de/c_von_a_bis_z/022_c_algorithmen_003.htm#mje2d240f1f56f6186232f65773fc37070
-void bubbleSort(int *array, size_t elemente)
-{
-  int i, temp;
-
-  while (elemente--)
-    for (i = 1; i <= elemente; i++)
-      if (array[i - 1] > array[i])
-      {
-        temp = array[i];
-        array[i] = array[i - 1];
-        array[i - 1] = temp;
-      }
-}
-
 void breakProgram(int program_loaded, InterpreterArguments *arguments,
                   size_t *breakpoint_size)
 {
@@ -234,8 +221,13 @@ void breakProgram(int program_loaded, InterpreterArguments *arguments,
 //  }
 
   // sort breakpoints ascending (eg. 3 - 7 - 10)
-  bubbleSort(arguments->breakpoints_, arguments->breakpoint_count_);
+  qsort(arguments->breakpoints_, arguments->breakpoint_count_, sizeof(int), cmpfunc);
   return;
+}
+
+int cmpfunc (const void *a, const void *b)
+{
+  return (*(int*)a - *(int*)b);
 }
 
 void step(int program_loaded, InterpreterArguments *arguments)
