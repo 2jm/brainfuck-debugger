@@ -64,6 +64,7 @@ int main(int argc, char *argv[])
   int command_line_argument_b = 0;
   int command_line_argument_e = 0;
   char *command_line_argument_path = NULL;
+  int eof = 0;
 
   if (argc >= 2)
   {
@@ -106,7 +107,8 @@ int main(int argc, char *argv[])
   // print first command line line output
   printf("esp> ");
   while (fgets(line, (int) line_size, stdin) != 0 && strcmp(line, "quit\n"))
-  {
+  { 
+    eof = 0;
     // fgets adds at the end '\n\0'. Therefore override '\n' with '\0'
     line[strlen(line) - 1] = '\0';
 
@@ -193,6 +195,9 @@ int main(int argc, char *argv[])
         change(program_loaded, *arguments.data_segment_);
       }
     }
+    else if(!cmd)
+      eof = 1;
+
     // print command line line output
     printf("esp> ");
   }
@@ -208,8 +213,8 @@ int main(int argc, char *argv[])
   freeInterpreterArguments(&evalArguments);
 
   //TODO: free all variables of arguments here
-
-  printf("Bye.\n");
+  if (!eof)  
+    printf("Bye.\n");
   return 0;
 }
 
