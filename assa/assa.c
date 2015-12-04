@@ -5,9 +5,11 @@
 //
 // Group: 13020 study assistant Angela Promitzer
 //
-// Authors: Johannes Kopf 1431505, Jonas Juffinger, Matthias Klotz
+// Authors: Jonas Juffinger 1531253
+//          Matthias Klotz  1530653
+//          Johannes Kopf   1431505
 //
-// Latest Changes: 20.11.2015 (by Johannes Kopf)
+// Latest Changes: 03.12.2015 (by Johannes Kopf)
 //-----------------------------------------------------------------------------
 //
 
@@ -17,61 +19,23 @@
 #include "debugFunctions.h"
 #include "interpreter.h"
 
-////-----------------------------------------------------------------------------
-/////
-///// Reads a line from the console till the EOF is given as input.
-/////
-///// @param bufferLen The buffer length that is set inside the function to get
-///// access to it outside.
-////
-//char *readLine (int *bufferLen)
-//{
-//  int ch;
-//  int len;
-//  char *buffer = malloc (sizeof (char));
-//  if (buffer == NULL)
-//  {
-//    return NULL;
-//  }
-//  for (len = 0; (ch = getchar ()) != '\n'; len++) //EOF
-//  {
-//    buffer[len] = (char) ch;
-//    char *new_mem = realloc (buffer, (len + 2) * sizeof (char)); // +1 due to
-//    // index, +1 due to \0
-//    if (new_mem != NULL)
-//    {
-//      buffer = new_mem;
-//    }
-//    else
-//    {
-//      free (buffer);
-//      printf ("[ERR] out of memory\\n");
-//      return NULL;
-//    }
-//  }
-//  buffer[len] = '\0'; // add string null-termination character
-//  *bufferLen = len;
-//  return buffer;
-//}
+#define NOT_LOADED       0
+#define LOADED_FROM_FILE 1
+#define LOADED_FROM_EVAL 2
 
-//char *simplifyWhitespaces (char *segments)
-//{
-//  int len = strlen (segments);
-//  int cnt;
-//  for (cnt = 0; cnt < len; cnt++)
-//  {
-//    if (segments[cnt] == ' ' && segments[cnt + 1] == ' ')
-//    {
-//      int remove_from;
-//      // remove the element at the position cnt
-//      for (remove_from = cnt; remove_from < len - 1; remove_from++)
-//      {
-//        segments[remove_from] = segments[remove_from + 1];
-//      }
-//    }
-//  }
-//  return segments;
-//}
+void breakProgram(int program_loaded, InterpreterArguments *arguments,
+                  int breakpoint_size);
+
+void step(int program_loaded, InterpreterArguments *arguments);
+
+void memory(int program_loaded, unsigned char *data_segment,
+            unsigned char *data_pointer_);
+
+void show(int program_loaded, char *program_counter);
+
+void change(int program_loaded, unsigned char *data_segment);
+
+void binary(char number, char *binary_number, int digits);
 
 //------------------------------------------------------------------------------
 ///
@@ -83,256 +47,319 @@
 ///
 /// @return always zero
 //
-
-void binary(char number, char *binary_number);
-
-
-int main (int argc, char *argv[])
+int main(int argc, char *argv[])
 {
-  //first step of changing to the argument struct
-  InterpreterArguments arguments = 
-  getUsableInterpreterArgumentsStruct(NULL, NULL, NULL);
-  
-  InterpreterArguments evalArguments = 
-  getUsableInterpreterArgumentsStruct(arguments.data_segment_,
-                                      arguments.data_length_,
-                                      arguments.data_pointer_);
-  size_t data_segment_size = 1024; // 1024 Bytes (0 - 1023)
-  // init datasegment with 0s
-  unsigned char *data_segment = calloc (data_segment_size, sizeof (unsigned char));
-  // init datasegment with 0s - variant 2
-  //char *data_segment = malloc (data_segment_size * sizeof (char));
-  //memset(data_segment, 0, data_segment_size * sizeof(char));
-  char *data_pointer = data_segment;
+  //create the interpreter argument struct
+  InterpreterArguments arguments =
+    getUsableInterpreterArgumentsStruct(NULL, NULL, NULL);
+  int program_loaded = NOT_LOADED;
+  int breakpoint_size = 10;
+  // allocate char array for console input
+  size_t line_size = 100;
+  char *line = calloc(line_size, sizeof(char));
 
-  size_t code_size = 1024;
-  char *code = calloc (code_size, sizeof (char));
-  char *code_position = code;
-
-  int breakpoint_count = 0;
-  int *breakpoints = NULL;
-
-  int line_size = 100;
-
-  int program_loaded = 0;
-
-  char binary_number[9];
-
-  // changed by Jonas
-  // malloc is dangerous because the block is uninitialized
-  char *line = calloc (line_size, sizeof (char));
-  while (strcmp (line, "quit")) // != 0
+  if (argc > 2)
   {
-    printf ("esp> ");
-    // read from the console till '\n'
-    fgets (line, line_size, stdin);
-    // fgets liest am Ende \n und dann \0 ein. Überschreibe also das \n.
-    line[strlen (line) - 1] = '\0';
+    int argument;
+    for (argument = 1; argument < argc - 1; argument++)
+    {
+      if (strcmp(argv[argument], "-e") == 0)
+      {
+        char *path = argv[argument + 1];
+
+        load(path, &arguments);
+        run(&arguments);
+
+        return 0;
+      }
+    }
+  }
+
+  // print first command line line output
+  printf("esp> ");
+  while (fgets(line, (int) line_size, stdin) != 0 && strcmp(line, "quit\n"))
+  {
+    // fgets adds at the end '\n\0'. Therefore override '\n' with '\0'
+    line[strlen(line) - 1] = '\0';
 
     char *cmd;
-    cmd = strtok (line, "  ");
-    //TODO: -e soll laut Spezifikation als Argument übergeben werden, nicht
-    //TODO: in der Command line!
-    if (strcmp (cmd, "-e") == 0)
+    cmd = strtok(line, "  ");
+    if (strcmp(cmd, "load") == 0)
     {
-      cmd = strtok (NULL, " ");
-      load (cmd, code);
-      run (code, &data_segment, &data_segment_size, &code_position,
-           &data_pointer, breakpoints);
-
-      // code reset
-      memset (code, 0, code_size * sizeof (char));
+      cmd = strtok(NULL, " ");
+      program_loaded = load(cmd, &arguments);
     }
-    else if (strcmp (cmd, "load") == 0)
+    else if (strcmp(cmd, "run") == 0)
     {
-      // data reset
-      memset (data_segment, 0, data_segment_size * sizeof (unsigned char));
-
-      cmd = strtok (NULL, " ");
-      load (cmd, &arguments);
-    }
-    else if (strcmp (cmd, "run") == 0)
-    {
-      if (strlen (code) == 0)
+      if (program_loaded != LOADED_FROM_FILE)
       {
-        printf ("[ERR] no program loaded\n");
+        printf("[ERR] no program loaded\n");
         continue;
       }
-      if (run (code, &data_segment, &data_segment_size, &code_position,
-               &data_pointer, breakpoints) == 0) // ran to the end
+      if (run(&arguments) == 0) // ran to the end
       {
         // code reset
-        memset (code, 0, code_size * sizeof (char));
+        memset(arguments.program_, 0, arguments.program_length_);
 
+        // TODO: what should happen, if run is called twice?
         // breakpoint reset
-        memset (breakpoints, 0, breakpoint_count * sizeof (int));
-        breakpoints = NULL;
+        //memset(arguments.breakpoints_, 0, breakpoint_size * sizeof(int));
+        free(arguments.breakpoints_);
+        arguments.breakpoints_ = NULL;
+        breakpoint_size = 10;
       }
       else // stopped at breakpoint
       {
-        //TODO: remove breakpoint from breakpoint list
+        // shift all elements from breakpoints array one position left
+        // this removes the first element/breakpoint
+        int breakp;
+        for (breakp = 0; breakp < arguments.breakpoint_count_ - 1; breakp++)
+        {
+          arguments.breakpoints_[breakp] = arguments.breakpoints_[breakp + 1];
+        }
+        arguments.breakpoint_count_--;
       }
     }
-    else if (strcmp (cmd, "eval") == 0)
+    else if (strcmp(cmd, "eval") == 0)
     {
-      char *bfstring = strtok (NULL, " ");
-      eval (&evalArguments, bfstring);
-      program_loaded = 1;
+      char *bfstring = strtok(NULL, " ");
+      eval(&arguments, bfstring);
+      program_loaded = LOADED_FROM_EVAL;
     }
-    else if (strcmp (cmd, "break") == 0)
+    else if (strcmp(cmd, "break") == 0)
     {
-      if (strlen (code) == 0)
-      {
-        printf ("[ERR] no program loaded\n");
-        continue;
-      }
-      cmd = strtok (NULL, " ");
-      int number = strtol (cmd, (char **) NULL, 10);
-
-      int *new_mem = realloc (breakpoints, ++breakpoint_count * sizeof (int));
-      if (new_mem != NULL)
-      {
-        breakpoints = new_mem;
-      }
-      else
-      {
-        free (breakpoints);
-        printf ("[ERR] out of memory\\n");
-      }
-      breakpoints[breakpoint_count - 1] = number;
-
-      //TODO: sort breakpoints here ascending
+      breakProgram(program_loaded, &arguments, breakpoint_size);
     }
-    else if (strcmp (cmd, "step") == 0)
+    else if (strcmp(cmd, "step") == 0)
     {
-      if (strlen (code) == 0)
-      {
-        printf ("[ERR] no program loaded\n");
-        continue;
-      }
-      cmd = strtok (NULL, " ");
-      int steps = (int) strtol(cmd, (char**)NULL, 10);
-
-      interpreter(code, &data_segment, &data_segment_size, &code_position,
-                  &data_pointer, steps, -1);
-//      run (code, &data_segment, &data_segment_size, &code_position,
-//           &data_pointer, breakpoints); //== 0
+      step(program_loaded, &arguments);
     }
-    else if (strcmp (cmd, "memory") == 0 && !program_loaded)
+    else if (strcmp(cmd, "memory") == 0)
     {
-      if (strlen (code) == 0)
-      {
-        printf ("[ERR] no program loaded\n");
-        continue;
-      }
-      cmd = strtok (NULL, " ");
-      if (cmd == NULL)
-      {
-        printf ("Hex at %d: %x\n", 0, *(data_segment));
-        continue;
-      }
-      int number = (int) strtol (cmd, (char **) NULL, 10); // 10 = base of digit
-      char *type = strtok (NULL, " ");
-
-      //TODO: how to handle if type is not given? DONE
-
-      if (strcmp (type, "int") == 0)
-      {
-        printf ("Integer at %d: %d\n", number, *(data_segment + number));
-      }
-      else if (strcmp (type, "bin") == 0)
-      {
-        //calculating the binary number
-        binary((*data_segment + number), binary_number);  
-        printf ("Binary at %d: %s\n", number, binary_number);
-      }
-      else if (strcmp (type, "char") == 0)
-      {
-        printf ("Char at %d: %c\n", number, *(data_segment + number));
-      }
-      else if (strcmp (type, "hex") == 0 || type == NULL)
-      {
-        printf ("Hex at %d: %x\n", number, *(data_segment + number));
-      }
+      memory(program_loaded, *arguments.data_segment_,
+             *arguments.data_pointer_);
     }
-    else if (strcmp (cmd, "show") == 0)
+    else if (strcmp(cmd, "show") == 0)
     {
-      if (strlen (code) == 0)
-      {
-        printf ("[ERR] no program loaded\n");
-        continue;
-      }
-      cmd = strtok (NULL, " ");
-      // 10 is default size
-      int size = cmd != NULL ? strtol (cmd, (char **) NULL, 10) : 10;
-
-      // Source: http://stackoverflow
-      // .com/questions/4214314/get-a-substring-of-a-char
-      // print "size" characters from target string
-      // at code position + offset
-      printf ("%.*s\n", size, code + (code_position - code));
+      show(program_loaded, arguments.program_counter_);
     }
-    else if (strcmp (cmd, "change") == 0 && !program_loaded)
+    else if (strcmp(cmd, "change") == 0)
     {
-      if (strlen (code) == 0)
-      {
-        printf ("[ERR] no program loaded\n");
-        continue;
-      }
-      cmd = strtok (NULL, " ");
-      char *end_ptr;
-      int number = strtol (cmd, &end_ptr, 10);
-      if (end_ptr == cmd) // conversion failed
-      {
-        // default number: current position
-        number = 0;
-      }
-
-      cmd = strtok (NULL, " ");
-      int hex_byte = (int) strtol (cmd, &end_ptr, 16);
-      if (end_ptr == cmd) // conversion failed
-      {
-        // default hex_byte: 0x0
-        hex_byte = 0;
-      }
-
-      //TODO: Debug
-      printf ("Read: hex: 0x%x - int: %i\n", hex_byte, hex_byte);
-
-      //Specification: Die Hex Eingabe soll nicht mit 0x beginnen!
-      // otherwise:
-      // int hex_byte = (int)strtol(cmd, NULL, 0);
-      //http://stackoverflow.com/questions/10156409/convert-hex-string-char-to-int
-
-      //TODO: funktioniert nicht richtig (change 9f wird zu ffffff9f anstatt ff, 4f
-      // stimmt noch - gibt aus: 4f
-      *(data_segment + number) = hex_byte;
+      change(program_loaded, *arguments.data_segment_);
     }
+
+    // print command line line output
+    printf("esp> ");
   }
-  free (line);
 
-  // free all variables used above here
-  free (data_segment);
-  free (code);
-  free (breakpoints);
+  free(line);
 
-  printf ("Bye.\n");
+  //TODO: free all variables of arguments here
 
+  printf("Bye.\n");
   return 0;
 }
 
-
-void binary(char number,char *binary_number)
+// Source: http://openbook.rheinwerk-verlag.de/c_von_a_bis_z/022_c_algorithmen_003.htm#mje2d240f1f56f6186232f65773fc37070
+void bubbleSort(int *array, int elemente)
 {
-  int counter = 0;
+  int i, temp;
 
-  while(number)
+  while (elemente--)
+    for (i = 1; i <= elemente; i++)
+      if (array[i - 1] > array[i])
+      {
+        temp = array[i];
+        array[i] = array[i - 1];
+        array[i - 1] = temp;
+      }
+}
+
+void breakProgram(int program_loaded, InterpreterArguments *arguments,
+                  int breakpoint_size)
+{
+  if (program_loaded != LOADED_FROM_FILE)
   {
-    binary_number[counter] = number % 2;
-    number = number / 2;
+    printf("[ERR] no program loaded\n");
+    return;
+  }
+  // get breakpoint position
+  char *number_input = strtok(NULL, " ");
+  int number = strtol(number_input, (char **) NULL, 10);
 
-    counter++;
+  // allow only positive breakpoints
+  if(number < 0)
+  {
+    return;
   }
 
-  binary_number[counter] = '\0';
+  // if breakpoint with same number is already there, don't add it
+  int breakp = 0;
+  for (breakp = 0; breakp < arguments->breakpoint_count_; breakp++)
+  {
+    if (arguments->breakpoints_[breakp] == number)
+    {
+      return;
+    }
+  }
+
+  // check if breakpoints has any memory allocated
+  if (arguments->breakpoints_ == NULL)
+  {
+    arguments->breakpoints_ = calloc(breakpoint_size, sizeof(int));
+    arguments->breakpoint_count_ = 0;
+  }
+  // extend breakpoints memory if needed
+  if (arguments->breakpoint_count_ + 1 > breakpoint_size)
+  {
+    breakpoint_size *= 2;
+    arguments->breakpoints_ = realloc(arguments->breakpoints_,
+                                      breakpoint_size * sizeof(int));
+  }
+
+  // add next breakpoint
+  arguments->breakpoints_[arguments->breakpoint_count_] = number;
+  arguments->breakpoint_count_++;
+
+//TODO: change every realloc to free the memory if NULL is returned:
+//  int *new_mem = realloc (breakpoints, ++breakpoint_count * sizeof (int));
+//  if (new_mem != NULL)
+//  {
+//    breakpoints = new_mem;
+//  }
+//  else
+//  {
+//    free (breakpoints);
+//    printf ("[ERR] out of memory\\n");
+//  }
+
+  // sort breakpoints ascending (eg. 3 - 7 - 10)
+  bubbleSort(arguments->breakpoints_, arguments->breakpoint_count_);
+  return;
+}
+
+void step(int program_loaded, InterpreterArguments *arguments)
+{
+  if (program_loaded != LOADED_FROM_FILE)
+  {
+    printf("[ERR] no program loaded\n");
+    return;
+  }
+  char *steps = strtok(NULL, " ");
+  arguments->steps_ = (int) strtol(steps, (char **) NULL, 10);
+
+  interpreter(arguments);
+}
+
+void memory(int program_loaded, unsigned char *data_segment,
+            unsigned char *data_pointer_)
+{
+  if (program_loaded == NOT_LOADED)
+  {
+    printf("[ERR] no program loaded\n");
+    return;
+  }
+  char *number_input = strtok(NULL, " ");
+  if (number_input == NULL)
+  {
+    printf("Hex at %d: %x\n", (int) (data_pointer_ - data_segment),
+           *data_pointer_);
+    return;
+  }
+  // 10 = base of digit
+  int number = (int) strtol(number_input, (char **) NULL, 10);
+
+  char *type = strtok(NULL, " ");
+  if (strcmp(type, "int") == 0)
+  {
+    printf("Integer at %d: %d\n", number, *(data_segment + number));
+  }
+  else if (strcmp(type, "bin") == 0)
+  {
+    int binary_digits = 8;
+    char *binary_number = malloc(binary_digits * sizeof(char));
+    //calculating the binary number
+    binary(*(data_segment + number), binary_number, binary_digits);
+    printf("Binary at %d: %s\n", number, binary_number);
+  }
+  else if (strcmp(type, "char") == 0)
+  {
+    printf("Char at %d: %c\n", number, *(data_segment + number));
+  }
+  else if (strcmp(type, "hex") == 0 || type == NULL)
+  {
+    printf("Hex at %d: %x\n", number, *(data_segment + number));
+  }
+}
+
+void show(int program_loaded, char *program_counter)
+{
+  if (program_loaded != LOADED_FROM_FILE)
+  {
+    printf("[ERR] no program loaded\n");
+    return;
+  }
+  char *size_input = strtok(NULL, " ");
+  // 10 is default size
+  int size = size_input != NULL ? strtol(size_input, (char **) NULL, 10) : 10;
+
+  // Source: http://stackoverflow
+  // .com/questions/4214314/get-a-substring-of-a-char
+  // print "size" characters from target string
+  // at code position + offset
+  printf("%.*s\n", size, program_counter);
+}
+
+void change(int program_loaded, unsigned char *data_segment)
+{
+  if (program_loaded == NOT_LOADED)
+  {
+    printf("[ERR] no program loaded\n");
+    return;
+  }
+
+  char *number_input = strtok(NULL, " ");
+  char *end_ptr;
+  int number = strtol(number_input, &end_ptr, 10);
+  if (end_ptr == number_input) // conversion failed
+  {
+    // default number: current position
+    number = 0;
+  }
+
+  char *hex_byte_input = strtok(NULL, " ");
+  int hex_byte = (int) strtol(hex_byte_input, &end_ptr, 16);
+  if (end_ptr == hex_byte_input) // conversion failed
+  {
+    // default hex_byte: 0x0
+    hex_byte = 0;
+  }
+  *(data_segment + number) = hex_byte;
+}
+
+void binary(char number, char *binary_number, int digits)
+{
+  // fill binary_number array from the end, to let the binary number be correct
+  int counter = digits - 1;
+
+  while (number)
+  {
+    if (number % 2 == 0)
+    {
+      binary_number[counter] = '0';
+    }
+    else
+    {
+      binary_number[counter] = '1';
+    }
+    number /= 2;
+    counter--;
+  }
+
+  for (; counter >= 0; counter--)
+  {
+    binary_number[counter] = '0';
+  }
+
+  binary_number[digits] = '\0';
 }

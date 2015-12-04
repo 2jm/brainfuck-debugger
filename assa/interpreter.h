@@ -28,6 +28,7 @@ typedef struct {
 
 typedef struct {
   char *program_; //array where the program is stored
+  size_t program_length_; //size of the whole program array
   unsigned char **data_segment_; //pointer to the data segment
   size_t *data_length_;  //length of the data segment
   char *program_counter_; //pointer pointing to the current command

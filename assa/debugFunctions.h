@@ -22,6 +22,10 @@
 #include <string.h>
 #include "interpreter.h"
 
+#define NOT_LOADED       0
+#define LOADED_FROM_FILE 1
+#define LOADED_FROM_EVAL 2
+
 //-----------------------------------------------------------------------------
 ///
 /// Loading the code character by character out of a file and write it into an 
@@ -30,8 +34,9 @@
 /// @param *filedirectory directory of the codefile to fetch
 /// @param *program Array in which the bf-code gets written
 ///
+/// @return 0 when not loaded (error), LOADED_FROM_FILE when loaded
 //
-void load(char *filedirectory, InterpreterArguments *interpreter_arguments);
+int load(char *filedirectory, InterpreterArguments *interpreter_arguments);
 
 //-----------------------------------------------------------------------------
 ///
@@ -47,8 +52,9 @@ void load(char *filedirectory, InterpreterArguments *interpreter_arguments);
 /// @param *breakpoints array where the positions of the breakpoints are saved
 ///
 //
-int run(char *program, char **data, size_t *data_length,char **program_counter,
-        char **data_pointer, int *breakpoints);
+int run(InterpreterArguments *interpreter_arguments);
+//char *program, char **data, size_t *data_length,char **program_counter,
+//char **data_pointer, int *breakpoints);
 
 //-----------------------------------------------------------------------------
 ///
@@ -62,7 +68,9 @@ int run(char *program, char **data, size_t *data_length,char **program_counter,
 ///         funtionccall
 ///
 //
-void eval(InterpreterArguments *interpreter_arguments, char *input_bfstring);
+void eval(InterpreterArguments *arguments, char *input_bfstring);
+//char **data, size_t *data_length, char **data_pointer,
+//char *input_bfstring);
 
 //-----------------------------------------------------------------------------
 ///
