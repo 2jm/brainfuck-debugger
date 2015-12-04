@@ -113,7 +113,10 @@ int main(int argc, char *argv[])
         printf("[ERR] no program loaded\n");
         continue;
       }
-      if (run(&arguments) == 0) // ran to the end
+
+      int stop_reason = run(&arguments);
+
+      if (stop_reason == REGULAR_STOP) // ran to the end
       {
         // code reset
         memset(arguments.program_, 0, arguments.program_length_);
@@ -125,10 +128,16 @@ int main(int argc, char *argv[])
         arguments.breakpoints_ = NULL;
         breakpoint_size = 10;
       }
-      else // stopped at breakpoint
+      else if(stop_reason == STEP_STOP)
+      {
+        //should never be reached
+      }
+      else if(stop_reason == BREAKPOINT_STOP) // stopped at breakpoint
       {
         // shift all elements from breakpoints array one position left
         // this removes the first element/breakpoint
+
+        //TODO do this with memmov();
         int breakp;
         for (breakp = 0; breakp < arguments.breakpoint_count_ - 1; breakp++)
         {
@@ -141,7 +150,10 @@ int main(int argc, char *argv[])
     {
       char *bfstring = strtok(NULL, " ");
       eval(&evalArguments, bfstring, bonus);
-      program_loaded = LOADED_FROM_EVAL;
+
+      //only set the program_loaded variable if no program was loaded yet
+      if(program_loaded == NOT_LOADED)
+        program_loaded = LOADED_FROM_EVAL;
     }
     else if (strcmp(cmd, "break") == 0)
     {
@@ -172,6 +184,11 @@ int main(int argc, char *argv[])
   freePointer((void**) &line);
 
   freeInterpreterArguments(&arguments);
+
+  // set this pointers to NULL so that they are not freed a second time
+  evalArguments.data_segment_ = NULL;
+  evalArguments.data_pointer_ = NULL;
+  evalArguments.data_length_  = NULL;
   freeInterpreterArguments(&evalArguments);
 
   //TODO: free all variables of arguments here
@@ -259,6 +276,8 @@ void step(int program_loaded, InterpreterArguments *arguments)
   arguments->steps_ = (int) strtol(steps, (char **) NULL, 10);
 
   interpreter(arguments);
+
+  arguments->steps_ = 0;
 }
 
 void memory(int program_loaded, unsigned char *data_segment,

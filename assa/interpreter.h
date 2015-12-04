@@ -21,7 +21,7 @@ typedef struct {
 } Jump;
 
 typedef struct {
-  int count_;
+  unsigned int count_;
   size_t allocated_memory_;
   Jump *array_;
 } Jumps;
