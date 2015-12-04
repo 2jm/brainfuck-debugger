@@ -195,8 +195,9 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
     *interpreter_arguments.data_pointer_ = *interpreter_arguments.data_segment_;
   }
 
-  interpreter_arguments.jumps_.allocated_memory_ = 100;
-  interpreter_arguments.jumps_.array_ = (Jump*) malloc(100 * sizeof(Jump));
+  interpreter_arguments.jumps_.allocated_memory_ = 200;
+  interpreter_arguments.jumps_.array_ = (Jump*) malloc(
+    interpreter_arguments.jumps_.allocated_memory_ * sizeof(Jump));
 
   return interpreter_arguments;
 }
@@ -340,8 +341,6 @@ void insertJump(Jumps *jumps, Jump jump)
   {
     //extend array
     jumps->allocated_memory_ *= 2;
-    jumps->array_ = realloc(jumps->array_, jumps->allocated_memory_);
+    jumps->array_ = realloc(jumps->array_, jumps->allocated_memory_ * sizeof(Jump));
   }
-
-  //printf("Program is jumping on step %d by %d", jump.step_, jump.distance_);
 }
