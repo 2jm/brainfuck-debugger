@@ -12,6 +12,9 @@ int jumpToMatchingBrace(InterpreterArguments *interpreter_arguments);
 
 void insertJump(Jumps *jumps, Jump jump);
 
+void freePointer(void **pointer);
+void freeDoublePointer(void ***pointer);
+
 
 int interpreter (InterpreterArguments *interpreter_arguments)
 {
@@ -25,6 +28,9 @@ int interpreter (InterpreterArguments *interpreter_arguments)
   // print and read do not change
   const char loop_start   = (direction == 1) ? (char)'[' : (char)']';
   const char loop_end     = (direction == 1) ? (char)']' : (char)'[';
+
+  const char jump_point   = (char)'&';
+  const char jump         = (char)'%';
 
   int break_loop = 0;
 
@@ -126,6 +132,26 @@ int interpreter (InterpreterArguments *interpreter_arguments)
       processLoop(interpreter_arguments, direction);
     }
 
+
+    // ------------  &  ------------
+    else if (*(interpreter_arguments->program_counter_) == jump_point)
+    {
+      newJumpPoint(interpreter_arguments);
+      **interpreter_arguments->data_pointer_ = 0;
+
+      interpreter_arguments->program_counter_ += direction;
+    }
+
+
+    // ------------  %  ------------
+    else if (*(interpreter_arguments->program_counter_) == jump)
+    {
+      interpreter_arguments->program_counter_ = 
+      interpreter_arguments->jump_points_[**interpreter_arguments->data_pointer_];
+
+      interpreter_arguments->program_counter_ += direction;
+    }
+
     interpreter_arguments->step_counter_ += direction;
 
     //printf(" step: %d\n", interpreter_arguments->step_counter_-1);
@@ -193,12 +219,38 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
   }
 
   interpreter_arguments.jumps_.allocated_memory_ = 100;
-  interpreter_arguments.jumps_.array_ = (Jump *) malloc(100 * sizeof(Jump));
+  interpreter_arguments.jumps_.array_ = (Jump*) malloc(100 * sizeof(Jump));
 
   return interpreter_arguments;
 }
 
 
+void freeInterpreterArguments(InterpreterArguments *interpreterArguments)
+{
+  freePointer((void**) &(interpreterArguments->program_));
+  freeDoublePointer((void***) &(interpreterArguments->data_segment_));
+  freePointer((void**) &(interpreterArguments->data_length_));
+  freePointer((void**) &(interpreterArguments->data_pointer_));
+  freePointer((void**) &(interpreterArguments->breakpoints_));
+  freePointer((void**) &(interpreterArguments->jumps_.array_));
+}
+
+void freePointer(void **pointer)
+{
+  free(*pointer);
+  *pointer = NULL;
+}
+
+void freeDoublePointer(void ***pointer)
+{
+  if(*pointer != NULL)
+  {
+    freePointer(*pointer);
+
+    free(*pointer);
+    *pointer = NULL;
+  }
+}
 
 
 void expandDataSegment (unsigned char **data_segment, size_t *data_length)
@@ -315,4 +367,23 @@ void insertJump(Jumps *jumps, Jump jump)
   }
 
   //printf("Program is jumping on step %d by %d", jump.step_, jump.distance_);
+}
+
+void newJumpPoint(InterpreterArguments *interpreter_arguments)
+{
+  if (**interpreter_arguments->data_pointer_ > 
+      *interpreter_arguments->size_of_jump_points_)
+  {
+    interpreter_arguments->jump_points_ = 
+    realloc(interpreter_arguments->jump_points_ , sizeof(char) * 
+            **interpreter_arguments->data_pointer_);
+    
+    *interpreter_arguments->size_of_jump_points_ = 
+    **interpreter_arguments->data_pointer_;
+  }
+
+  interpreter_arguments->jump_points_[**interpreter_arguments->data_pointer_] = 
+  interpreter_arguments->program_counter_;
+
+
 }

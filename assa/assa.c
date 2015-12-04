@@ -54,6 +54,7 @@ int main(int argc, char *argv[])
   //create the interpreter argument struct
   InterpreterArguments arguments =
     getUsableInterpreterArgumentsStruct(NULL, NULL, NULL);
+
   int program_loaded = NOT_LOADED;
   size_t breakpoint_size = 10;
   // allocate char array for console input
@@ -78,10 +79,18 @@ int main(int argc, char *argv[])
         load(path, &arguments, bonus);
         run(&arguments);
 
+        freePointer((void**) &line);
+        freeInterpreterArguments(&arguments);
+
         return 0;
       }
     }
   }
+
+  InterpreterArguments evalArguments = getUsableInterpreterArgumentsStruct(
+    arguments.data_segment_, arguments.data_length_, arguments.data_pointer_
+  );
+
 
   // print first command line line output
   printf("esp> ");
@@ -131,7 +140,7 @@ int main(int argc, char *argv[])
     else if (strcmp(cmd, "eval") == 0)
     {
       char *bfstring = strtok(NULL, " ");
-      eval(&arguments, bfstring, bonus);
+      eval(&evalArguments, bfstring, bonus);
       program_loaded = LOADED_FROM_EVAL;
     }
     else if (strcmp(cmd, "break") == 0)
@@ -160,7 +169,10 @@ int main(int argc, char *argv[])
     printf("esp> ");
   }
 
-  free(line);
+  freePointer((void**) &line);
+
+  freeInterpreterArguments(&arguments);
+  freeInterpreterArguments(&evalArguments);
 
   //TODO: free all variables of arguments here
 

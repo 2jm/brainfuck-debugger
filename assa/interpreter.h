@@ -38,6 +38,8 @@ typedef struct {
   size_t breakpoint_count_; //size of the breakpoint array
   unsigned int step_counter_; //counts the steps the program makes altogether
   Jumps jumps_;
+  char** jump_points_;
+  char *size_of_jump_points_;
 } InterpreterArguments;
 
 
@@ -71,5 +73,14 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
 /// @param interpreter_arguments pointer to the InterpreterArguments struct
 //
 void resetInterpreterArguments(InterpreterArguments *interpreter_arguments);
+
+void freeInterpreterArguments(InterpreterArguments *interpreterArguments);
+
+
+void freePointer(void **pointer);
+
+void freeDoublePointer(void ***pointer);
+
+void newJumpPoint(InterpreterArguments *interpreter_arguments);
 
 #endif //ASSA_INTERPRETER_H
