@@ -16,8 +16,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "debugFunctions.h"
 #include "interpreter.h"
+#include "debugFunctions.h"
 
 #define NOT_LOADED       0
 #define LOADED_FROM_FILE 1
@@ -26,7 +26,7 @@
 void breakProgram(int program_loaded, InterpreterArguments *arguments,
                   size_t *breakpoint_size);
 
-void step(int program_loaded, InterpreterArguments *arguments);
+void step(int program_loaded, InterpreterArguments *arguments, int bonus);
 
 void memory(int program_loaded, unsigned char *data_segment,
             unsigned char *data_pointer_);
@@ -91,7 +91,6 @@ int main(int argc, char *argv[])
     arguments.data_segment_, arguments.data_length_, arguments.data_pointer_
   );
 
-
   // print first command line line output
   printf("esp> ");
   while (fgets(line, (int) line_size, stdin) != 0 && strcmp(line, "quit\n"))
@@ -111,39 +110,42 @@ int main(int argc, char *argv[])
       if (program_loaded != LOADED_FROM_FILE)
       {
         printf("[ERR] no program loaded\n");
-        continue;
       }
-
-      int stop_reason = run(&arguments);
-
-      if (stop_reason == REGULAR_STOP) // ran to the end
+      else
       {
-        // code reset
-        memset(arguments.program_, 0, arguments.program_length_);
+        int stop_reason = run(&arguments);
 
-        // TODO: what should happen, if run is called twice?
-        // breakpoint reset
-        //memset(arguments.breakpoints_, 0, breakpoint_size * sizeof(int));
-        free(arguments.breakpoints_);
-        arguments.breakpoints_ = NULL;
-        breakpoint_size = 10;
-      }
-      else if(stop_reason == STEP_STOP)
-      {
-        //should never be reached
-      }
-      else if(stop_reason == BREAKPOINT_STOP) // stopped at breakpoint
-      {
-        // shift all elements from breakpoints array one position left
-        // this removes the first element/breakpoint
-
-        //TODO do this with memmov();
-        int breakp;
-        for (breakp = 0; breakp < arguments.breakpoint_count_ - 1; breakp++)
+        if (stop_reason == REGULAR_STOP) // ran to the end
         {
-          arguments.breakpoints_[breakp] = arguments.breakpoints_[breakp + 1];
+          // code reset
+          memset(arguments.program_, 0, arguments.program_length_);
+
+          // TODO: what should happen, if run is called twice?
+          // breakpoint reset
+          //memset(arguments.breakpoints_, 0, breakpoint_size * sizeof(int));
+          free(arguments.breakpoints_);
+          arguments.breakpoints_ = NULL;
+          breakpoint_size = 10;
+
+          program_loaded = NOT_LOADED;
         }
-        arguments.breakpoint_count_--;
+        else if(stop_reason == STEP_STOP)
+        {
+          //should never be reached
+        }
+        else if(stop_reason == BREAKPOINT_STOP) // stopped at breakpoint
+        {
+          // shift all elements from breakpoints array one position left
+          // this removes the first element/breakpoint
+
+          //TODO do this with memmov();
+          int breakp;
+          for (breakp = 0; breakp < arguments.breakpoint_count_ - 1; breakp++)
+          {
+            arguments.breakpoints_[breakp] = arguments.breakpoints_[breakp + 1];
+          }
+          arguments.breakpoint_count_--;
+        }
       }
     }
     else if (strcmp(cmd, "eval") == 0)
@@ -161,7 +163,7 @@ int main(int argc, char *argv[])
     }
     else if (strcmp(cmd, "step") == 0)
     {
-      step(program_loaded, &arguments);
+      step(program_loaded, &arguments, bonus);
     }
     else if (strcmp(cmd, "memory") == 0)
     {
@@ -265,7 +267,7 @@ int cmpfunc (const void *a, const void *b)
   return (*(int*)a - *(int*)b);
 }
 
-void step(int program_loaded, InterpreterArguments *arguments)
+void step(int program_loaded, InterpreterArguments *arguments, int bonus)
 {
   if (program_loaded != LOADED_FROM_FILE)
   {
@@ -274,6 +276,13 @@ void step(int program_loaded, InterpreterArguments *arguments)
   }
   char *steps = strtok(NULL, " ");
   arguments->steps_ = (int) strtol(steps, (char **) NULL, 10);
+
+  if(arguments->steps_ == 0 || (arguments->steps_ < 0 && bonus == 0))
+  {
+    // don't call the interpreter with 0 steps because it would run indefinitely
+    // but just to nothing.
+    return;
+  }
 
   interpreter(arguments);
 

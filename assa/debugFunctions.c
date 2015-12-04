@@ -16,7 +16,6 @@
 //
 
 #include "debugFunctions.h"
-#include "interpreter.h"
 
 int load (char *file_directory, InterpreterArguments *arguments, int bonus)
 {
