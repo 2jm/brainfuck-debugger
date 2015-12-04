@@ -62,8 +62,7 @@ int run(char *program, char **data, size_t *data_length,char **program_counter,
 ///         funtionccall
 ///
 //
-void eval(char **data, size_t *data_length, char **data_pointer, 
-          char *input_bfstring);
+void eval(InterpreterArguments *interpreter_arguments, char *input_bfstring);
 
 //-----------------------------------------------------------------------------
 ///

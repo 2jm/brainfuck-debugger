@@ -90,7 +90,13 @@ void binary(char number, char *binary_number);
 int main (int argc, char *argv[])
 {
   //first step of changing to the argument struct
-  InterpreterArguments arguments = getUsableInterpreterArgumentsStruct(NULL);
+  InterpreterArguments arguments = 
+  getUsableInterpreterArgumentsStruct(NULL, NULL, NULL);
+  
+  InterpreterArguments evalArguments = 
+  getUsableInterpreterArgumentsStruct(arguments.data_segment_,
+                                      arguments.data_length_,
+                                      arguments.data_pointer_);
   size_t data_segment_size = 1024; // 1024 Bytes (0 - 1023)
   // init datasegment with 0s
   unsigned char *data_segment = calloc (data_segment_size, sizeof (unsigned char));
@@ -170,7 +176,7 @@ int main (int argc, char *argv[])
     else if (strcmp (cmd, "eval") == 0)
     {
       char *bfstring = strtok (NULL, " ");
-      eval (&data_segment, &data_segment_size, &data_pointer, bfstring);
+      eval (&evalArguments, bfstring);
       program_loaded = 1;
     }
     else if (strcmp (cmd, "break") == 0)

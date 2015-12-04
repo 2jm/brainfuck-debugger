@@ -35,7 +35,8 @@ void load (char *filedirectory, InterpreterArguments *arguments)
     //perror ("Error");
   }
   else
-  { 
+  {
+    arguments->program_ = (char *) malloc(1024) 
     //read the file char by char and write it into an array
     while ((character = fgetc (file)) != EOF)
     { 
