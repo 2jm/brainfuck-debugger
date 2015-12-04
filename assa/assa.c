@@ -60,32 +60,44 @@ int main(int argc, char *argv[])
   // allocate char array for console input
   size_t line_size = 100;
   char *line = calloc(line_size, sizeof(char));
-  int bonus = 0;
 
-  if (argc > 2)
+  int command_line_argument_b = 0;
+  int command_line_argument_e = 0;
+  char *command_line_argument_path = NULL;
+
+  if (argc >= 2)
   {
     int argument;
-    for (argument = 1; argument < argc - 1; argument++)
+    for (argument = 1; argument < argc; argument++)
     {
       if (strcmp(argv[argument], "-b") == 0)
       {
-        bonus = 1;
+        command_line_argument_b = 1;
       }
 
       if (strcmp(argv[argument], "-e") == 0)
       {
-        char *path = argv[argument + 1];
-
-        load(path, &arguments, bonus);
-        run(&arguments);
-
-        freePointer((void**) &line);
-        freeInterpreterArguments(&arguments);
-
-        return 0;
+        if(argc >= argument + 1)
+        {
+          command_line_argument_e = 1;
+          command_line_argument_path = argv[argument + 1];
+        }
       }
     }
   }
+
+  if(command_line_argument_e == 1)
+  {
+    load(command_line_argument_path, &arguments, command_line_argument_b);
+    run(&arguments);
+
+    freePointer((void**) &line);
+    freeInterpreterArguments(&arguments);
+
+    return 0;
+  }
+
+
 
   InterpreterArguments evalArguments = getUsableInterpreterArgumentsStruct(
     arguments.data_segment_, arguments.data_length_, arguments.data_pointer_
@@ -103,7 +115,7 @@ int main(int argc, char *argv[])
     if (strcmp(cmd, "load") == 0)
     {
       cmd = strtok(NULL, " ");
-      program_loaded = load(cmd, &arguments, bonus);
+      program_loaded = load(cmd, &arguments, command_line_argument_b);
     }
     else if (strcmp(cmd, "run") == 0)
     {
@@ -151,7 +163,7 @@ int main(int argc, char *argv[])
     else if (strcmp(cmd, "eval") == 0)
     {
       char *bfstring = strtok(NULL, " ");
-      eval(&evalArguments, bfstring, bonus);
+      eval(&evalArguments, bfstring, command_line_argument_b);
 
       //only set the program_loaded variable if no program was loaded yet
       if(program_loaded == NOT_LOADED)
@@ -163,7 +175,7 @@ int main(int argc, char *argv[])
     }
     else if (strcmp(cmd, "step") == 0)
     {
-      step(program_loaded, &arguments, bonus);
+      step(program_loaded, &arguments, command_line_argument_b);
     }
     else if (strcmp(cmd, "memory") == 0)
     {
@@ -281,6 +293,7 @@ void step(int program_loaded, InterpreterArguments *arguments, int bonus)
   {
     // don't call the interpreter with 0 steps because it would run indefinitely
     // but just to nothing.
+    arguments->steps_ = 0;  //set it 0 if it is < 0
     return;
   }
 
