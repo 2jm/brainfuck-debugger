@@ -112,85 +112,87 @@ int main(int argc, char *argv[])
 
     char *cmd;
     cmd = strtok(line, "  ");
-    if (strcmp(cmd, "load") == 0)
+    if (cmd)
     {
-      cmd = strtok(NULL, " ");
-      program_loaded = load(cmd, &arguments, command_line_argument_b);
-    }
-    else if (strcmp(cmd, "run") == 0)
-    {
-      if (program_loaded != LOADED_FROM_FILE)
+      if (strcmp(cmd, "load") == 0)
       {
-        printf("[ERR] no program loaded\n");
+        cmd = strtok(NULL, " ");
+        program_loaded = load(cmd, &arguments, command_line_argument_b);
       }
-      else
+      else if (strcmp(cmd, "run") == 0)
       {
-        int stop_reason = run(&arguments);
-
-        if (stop_reason == REGULAR_STOP) // ran to the end
+        if (program_loaded != LOADED_FROM_FILE)
         {
-          // code reset
-          memset(arguments.program_, 0, arguments.program_length_);
-
-          // TODO: what should happen, if run is called twice?
-          // breakpoint reset
-          //memset(arguments.breakpoints_, 0, breakpoint_size * sizeof(int));
-          free(arguments.breakpoints_);
-          arguments.breakpoints_ = NULL;
-          breakpoint_size = 10;
-
-          program_loaded = NOT_LOADED;
+          printf("[ERR] no program loaded\n");
         }
-        else if(stop_reason == STEP_STOP)
+        else
         {
-          //should never be reached
-        }
-        else if(stop_reason == BREAKPOINT_STOP) // stopped at breakpoint
-        {
-          // shift all elements from breakpoints array one position left
-          // this removes the first element/breakpoint
+          int stop_reason = run(&arguments);
 
-          //TODO do this with memmov();
-          int breakp;
-          for (breakp = 0; breakp < arguments.breakpoint_count_ - 1; breakp++)
+          if (stop_reason == REGULAR_STOP) // ran to the end
           {
-            arguments.breakpoints_[breakp] = arguments.breakpoints_[breakp + 1];
+            // code reset
+            memset(arguments.program_, 0, arguments.program_length_);
+
+            // TODO: what should happen, if run is called twice?
+            // breakpoint reset
+            //memset(arguments.breakpoints_, 0, breakpoint_size * sizeof(int));
+            free(arguments.breakpoints_);
+            arguments.breakpoints_ = NULL;
+            breakpoint_size = 10;
+
+            program_loaded = NOT_LOADED;
           }
-          arguments.breakpoint_count_--;
+          else if(stop_reason == STEP_STOP)
+          {
+            //should never be reached
+          }
+          else if(stop_reason == BREAKPOINT_STOP) // stopped at breakpoint
+          {
+            // shift all elements from breakpoints array one position left
+            // this removes the first element/breakpoint
+
+            //TODO do this with memmov();
+            int breakp;
+            for (breakp = 0; breakp < arguments.breakpoint_count_ - 1; breakp++)
+            {
+              arguments.breakpoints_[breakp] = arguments.breakpoints_[breakp + 1];
+            }
+            arguments.breakpoint_count_--;
+          }
         }
       }
-    }
-    else if (strcmp(cmd, "eval") == 0)
-    {
-      char *bfstring = strtok(NULL, " ");
-      eval(&evalArguments, bfstring, command_line_argument_b);
+      else if (strcmp(cmd, "eval") == 0)
+      {
+        char *bfstring = strtok(NULL, " ");
+        eval(&evalArguments, bfstring, command_line_argument_b);
 
-      //only set the program_loaded variable if no program was loaded yet
-      if(program_loaded == NOT_LOADED)
-        program_loaded = LOADED_FROM_EVAL;
+        //only set the program_loaded variable if no program was loaded yet
+        if(program_loaded == NOT_LOADED)
+          program_loaded = LOADED_FROM_EVAL;
+      }
+      else if (strcmp(cmd, "break") == 0)
+      {
+        breakProgram(program_loaded, &arguments, &breakpoint_size);
+      }
+      else if (strcmp(cmd, "step") == 0)
+      {
+        step(program_loaded, &arguments, command_line_argument_b);
+      }
+      else if (strcmp(cmd, "memory") == 0)
+      {
+        memory(program_loaded, *arguments.data_segment_,
+               *arguments.data_pointer_);
+      }
+      else if (strcmp(cmd, "show") == 0)
+      {
+        show(program_loaded, arguments.program_counter_);
+      }
+      else if (strcmp(cmd, "change") == 0)
+      {
+        change(program_loaded, *arguments.data_segment_);
+      }
     }
-    else if (strcmp(cmd, "break") == 0)
-    {
-      breakProgram(program_loaded, &arguments, &breakpoint_size);
-    }
-    else if (strcmp(cmd, "step") == 0)
-    {
-      step(program_loaded, &arguments, command_line_argument_b);
-    }
-    else if (strcmp(cmd, "memory") == 0)
-    {
-      memory(program_loaded, *arguments.data_segment_,
-             *arguments.data_pointer_);
-    }
-    else if (strcmp(cmd, "show") == 0)
-    {
-      show(program_loaded, arguments.program_counter_);
-    }
-    else if (strcmp(cmd, "change") == 0)
-    {
-      change(program_loaded, *arguments.data_segment_);
-    }
-
     // print command line line output
     printf("esp> ");
   }
