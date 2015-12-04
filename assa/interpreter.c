@@ -23,7 +23,6 @@ int interpreter (InterpreterArguments *interpreter_arguments)
   const char increment    = (direction == 1) ? (char)'+' : (char)'-';
   const char decrement    = (direction == 1) ? (char)'-' : (char)'+';
   // print and read do not change
-  // the loops are more complex
   const char loop_start   = (direction == 1) ? (char)'[' : (char)']';
   const char loop_end     = (direction == 1) ? (char)']' : (char)'[';
 

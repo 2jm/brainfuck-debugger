@@ -24,7 +24,7 @@
 #define LOADED_FROM_EVAL 2
 
 void breakProgram(int program_loaded, InterpreterArguments *arguments,
-                  int breakpoint_size);
+                  size_t *breakpoint_size);
 
 void step(int program_loaded, InterpreterArguments *arguments);
 
@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
   InterpreterArguments arguments =
     getUsableInterpreterArgumentsStruct(NULL, NULL, NULL);
   int program_loaded = NOT_LOADED;
-  int breakpoint_size = 10;
+  size_t breakpoint_size = 10;
   // allocate char array for console input
   size_t line_size = 100;
   char *line = calloc(line_size, sizeof(char));
@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
     }
     else if (strcmp(cmd, "break") == 0)
     {
-      breakProgram(program_loaded, &arguments, breakpoint_size);
+      breakProgram(program_loaded, &arguments, &breakpoint_size);
     }
     else if (strcmp(cmd, "step") == 0)
     {
@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
 }
 
 // Source: http://openbook.rheinwerk-verlag.de/c_von_a_bis_z/022_c_algorithmen_003.htm#mje2d240f1f56f6186232f65773fc37070
-void bubbleSort(int *array, int elemente)
+void bubbleSort(int *array, size_t elemente)
 {
   int i, temp;
 
@@ -176,7 +176,7 @@ void bubbleSort(int *array, int elemente)
 }
 
 void breakProgram(int program_loaded, InterpreterArguments *arguments,
-                  int breakpoint_size)
+                  size_t *breakpoint_size)
 {
   if (program_loaded != LOADED_FROM_FILE)
   {
@@ -185,7 +185,7 @@ void breakProgram(int program_loaded, InterpreterArguments *arguments,
   }
   // get breakpoint position
   char *number_input = strtok(NULL, " ");
-  int number = strtol(number_input, (char **) NULL, 10);
+  int number = (int) strtol(number_input, (char **) NULL, 10);
 
   // allow only positive breakpoints
   if(number < 0)
@@ -206,15 +206,15 @@ void breakProgram(int program_loaded, InterpreterArguments *arguments,
   // check if breakpoints has any memory allocated
   if (arguments->breakpoints_ == NULL)
   {
-    arguments->breakpoints_ = calloc(breakpoint_size, sizeof(int));
+    arguments->breakpoints_ = calloc(*breakpoint_size, sizeof(int));
     arguments->breakpoint_count_ = 0;
   }
   // extend breakpoints memory if needed
-  if (arguments->breakpoint_count_ + 1 > breakpoint_size)
+  if (arguments->breakpoint_count_ + 1 > *breakpoint_size)
   {
-    breakpoint_size *= 2;
+    *breakpoint_size *= 2;
     arguments->breakpoints_ = realloc(arguments->breakpoints_,
-                                      breakpoint_size * sizeof(int));
+                                      *breakpoint_size * sizeof(int));
   }
 
   // add next breakpoint
@@ -301,7 +301,7 @@ void show(int program_loaded, char *program_counter)
   }
   char *size_input = strtok(NULL, " ");
   // 10 is default size
-  int size = size_input != NULL ? strtol(size_input, (char **) NULL, 10) : 10;
+  int size = (size_input != NULL) ? (int) strtol(size_input, (char **) NULL, 10) : 10;
 
   // Source: http://stackoverflow
   // .com/questions/4214314/get-a-substring-of-a-char
@@ -320,7 +320,7 @@ void change(int program_loaded, unsigned char *data_segment)
 
   char *number_input = strtok(NULL, " ");
   char *end_ptr;
-  int number = strtol(number_input, &end_ptr, 10);
+  int number = (int) strtol(number_input, &end_ptr, 10);
   if (end_ptr == number_input) // conversion failed
   {
     // default number: current position
@@ -334,7 +334,7 @@ void change(int program_loaded, unsigned char *data_segment)
     // default hex_byte: 0x0
     hex_byte = 0;
   }
-  *(data_segment + number) = hex_byte;
+  *(data_segment + number) = (unsigned char) hex_byte;
 }
 
 void binary(char number, char *binary_number, int digits)
