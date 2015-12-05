@@ -151,15 +151,8 @@ int main(int argc, char *argv[])
           }
           else if(stop_reason == BREAKPOINT_STOP) // stopped at breakpoint
           {
-            // shift all elements from breakpoints array one position left
-            // this removes the first element/breakpoint
-
-            //TODO do this with memmov();
-            int breakp;
-            for (breakp = 0; breakp < arguments.breakpoint_count_ - 1; breakp++)
-            {
-              arguments.breakpoints_[breakp] = arguments.breakpoints_[breakp + 1];
-            }
+            // shift unused breakpoints left to remove already used breakpoint
+            memmove(arguments.breakpoints_, arguments.breakpoints_ + 1, (arguments.breakpoint_count_ - 1) * sizeof(int));
             arguments.breakpoint_count_--;
           }
         }
