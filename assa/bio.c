@@ -14,6 +14,7 @@ typedef struct Loop_
 {
   char *data_ptr_;
   struct Loop_ *next;
+  int cell_;
 } Loop;
 
 int interpret(unsigned char *memory, char *program, char *program_ctr);
@@ -22,7 +23,7 @@ int load(char *path, char **program, int program_size);
 
 int getNextCmd(char **program_ctr, int *cell);
 
-void push(Loop **top, char *data_ptr);
+void push(Loop **top, char *data_ptr, int *cell);
 
 char *pop(Loop **top);
 
@@ -52,11 +53,12 @@ int main(int argc, char *argv[])
   }
 }
 
-void push(Loop **top, char *data_ptr)
+void push(Loop **top, char *data_ptr, int *cell)
 {
   // make new stack item and copy data to it:
   Loop *new_item = malloc(sizeof(Loop));
   new_item->data_ptr_ = data_ptr;
+  new_item->cell_ = *cell;
 
   new_item->next = *top;    // next points to previous top
   *top = new_item;          // top now points to new item
@@ -71,7 +73,6 @@ char *pop(Loop **top)
   return data_ptr;            // and return the data we remembered
 }
 
-// TODO: check why 99bottles is not working
 int interpret(unsigned char *memory, char *program, char *program_ctr)
 {
   int *cell = calloc(1, sizeof(int));
@@ -101,15 +102,30 @@ int interpret(unsigned char *memory, char *program, char *program_ctr)
     {
       if (memory[*cell] == 0)
       {
-        // TODO: go to the end of the bracket
+        // go to matching end bracket
+        int found_right = 1;
+        while(found_right != 0)
+        {
+          program_ctr++;
+          if(*program_ctr == '}')
+          {
+            found_right--;
+          }
+          else if(*program_ctr == '{')
+          {
+            found_right++;
+          }
+        }
+        program_ctr--;
       }
 
       // push start position of loop
-      push(&loop_stack, program_ctr);
+      push(&loop_stack, program_ctr, cell);
     }
     else if (cmd == 3)
     {
-      if (memory[*cell] != 0)
+      //if (memory[*cell] != 0)
+      if(memory[loop_stack->cell_] != 0)
       {
         if (loop_stack == NULL)
         {
