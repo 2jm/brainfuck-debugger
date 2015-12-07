@@ -10,9 +10,22 @@
 #define NOT_LOADED       0
 #define LOADED_FROM_FILE 1
 
+typedef struct Loop_
+{
+  char *data_ptr_;
+  struct Loop_ *next;
+} Loop;
+
 int interpret(unsigned char *memory, char *program, char *program_ctr);
+
 int load(char *path, char **program, int program_size);
+
 int getNextCmd(char **program_ctr, int *cell);
+
+void push(Loop **top, char *data_ptr);
+
+char *pop(Loop **top);
+
 
 int main(int argc, char *argv[])
 {
@@ -24,7 +37,7 @@ int main(int argc, char *argv[])
     int program_size = 100;
     char *program = malloc(program_size * sizeof(char));
     char *program_ctr = malloc(sizeof(char *));
-    int memory_blocks = 3;
+    size_t memory_blocks = 3;
     unsigned char *memory = calloc(memory_blocks, sizeof(unsigned char *));
     program_loaded = load(path, &program, program_size);
     if (program_loaded == NOT_LOADED)
@@ -39,18 +52,33 @@ int main(int argc, char *argv[])
   }
 }
 
+void push(Loop **top, char *data_ptr)
+{
+  // make new stack item and copy data to it:
+  Loop *new_item = malloc(sizeof(Loop));
+  new_item->data_ptr_ = data_ptr;
+
+  new_item->next = *top;    // next points to previous top
+  *top = new_item;          // top now points to new item
+}
+
+char *pop(Loop **top)
+{
+  Loop *old_top = *top;       // remember the old top
+  char *data_ptr = old_top->data_ptr_;   // remember the old data
+  *top = old_top->next;       // move top down
+  free(old_top);              // now we can free the old StackItem
+  return data_ptr;            // and return the data we remembered
+}
+
+// TODO: check why 99bottles is not working
 int interpret(unsigned char *memory, char *program, char *program_ctr)
 {
   int *cell = calloc(1, sizeof(int));
-  int looping = 0;
-  char *loop_ptr = malloc(sizeof(char*));
+  Loop *loop_stack = NULL;
 
   for (program_ctr = program; *program_ctr != '\0'; program_ctr++)
   {
-    // TODO: remove debug code:
-    //char test = *program_ctr;
-    //putchar(test);
-
     if (*(program_ctr + 1) == '\0')
     {
       break;
@@ -64,41 +92,40 @@ int interpret(unsigned char *memory, char *program, char *program_ctr)
     else if (cmd == 0)
     {
       memory[*cell]++;
-      continue;
     }
     else if (cmd == 1)
     {
       memory[*cell]--;
-      continue;
     }
     else if (cmd == 2)
     {
-      // TODO: change to proove if cell is 0 here?
-      // TODO: add code for nested loops, otherwise 99 bottles of beer is not working
-      looping = 1;
-      loop_ptr = program_ctr;
-      continue;
-    }
-    else if(cmd == 3)
-    {
-      // failed
-      if(!looping)
+      if (memory[*cell] == 0)
       {
-        return -1;
+        // TODO: go to the end of the bracket
       }
-      if(memory[*cell] != 0)
+
+      // push start position of loop
+      push(&loop_stack, program_ctr);
+    }
+    else if (cmd == 3)
+    {
+      if (memory[*cell] != 0)
       {
-        program_ctr = loop_ptr;
+        if (loop_stack == NULL)
+        {
+          // too much closing brackets
+          return -1;
+        }
+        program_ctr = loop_stack->data_ptr_;
       }
       else
       {
-        continue;
+        pop(&loop_stack);
       }
     }
     else if (cmd == 4)
     {
       putchar(memory[*cell]);
-      continue;
     }
   }
   return 0;
@@ -110,7 +137,7 @@ int getNextCmd(char **program_ctr, int *cell)
   char first = **program_ctr;
   char second = *(*program_ctr + 1);
 
-  if(first == '}' && second == ';')
+  if (first == '}' && second == ';')
   {
     (*program_ctr)++;
     return 3;
@@ -151,19 +178,11 @@ int getNextCmd(char **program_ctr, int *cell)
     *cell = *(*program_ctr + 2) - 'x';
     if (0 <= *cell && *cell <= 2)
     {
-      if(ret == 2 && *(*program_ctr + 3) == '{')
-      {
-
-      }
-      else if(ret == 4 && *(*program_ctr + 3) == ';')
-      {
-
-      }
-      else
+      if (!((ret == 2 && *(*program_ctr + 3) == '{') || (ret == 4 && *(*program_ctr + 3) == ';')))
       {
         ret = -1;
       }
-      //0ox;  0oy;  0oz;
+      //0ox;  0oy;  0oz;  Oix{  etc.
       *program_ctr += 3;
     }
     else
@@ -171,7 +190,6 @@ int getNextCmd(char **program_ctr, int *cell)
       ret = -1;
     }
   }
-  // failed
   return ret;
 }
 
