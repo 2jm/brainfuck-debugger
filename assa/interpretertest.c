@@ -1,5 +1,3 @@
-#include "interpreter.h"
-
 //cool for debugging the interpreter, you won't need this
 void dumpDataSegment(unsigned char* data, size_t length);
 
