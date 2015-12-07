@@ -33,7 +33,8 @@ void memory(int program_loaded, unsigned char *data_segment,
 
 void show(int program_loaded, char *program_counter);
 
-void change(int program_loaded, unsigned char *data_segment);
+void change(int program_loaded, unsigned char *data_segment,
+            unsigned char *data_pointer);
 
 void binary(char number, char *binary_number, int digits);
 
@@ -107,7 +108,7 @@ int main(int argc, char *argv[])
   // print first command line line output
   printf("esp> ");
   while (fgets(line, (int) line_size, stdin) != 0 && strcmp(line, "quit\n"))
-  { 
+  {
     eof = 0;
     // fgets adds at the end '\n\0'. Therefore override '\n' with '\0'
     line[strlen(line) - 1] = '\0';
@@ -119,7 +120,10 @@ int main(int argc, char *argv[])
       if (strcmp(cmd, "load") == 0)
       {
         cmd = strtok(NULL, " ");
-        program_loaded = load(cmd, &arguments, command_line_argument_b);
+        if(cmd != NULL)
+        {
+          program_loaded = load(cmd, &arguments, command_line_argument_b);
+        }
       }
       else if (strcmp(cmd, "run") == 0)
       {
@@ -185,11 +189,14 @@ int main(int argc, char *argv[])
       }
       else if (strcmp(cmd, "change") == 0)
       {
-        change(program_loaded, *arguments.data_segment_);
+        change(program_loaded, *arguments.data_segment_,
+               *arguments.data_pointer_);
       }
     }
-    else if(!cmd)
+    else // Das kann man weglassen if(!cmd)
+    {
       eof = 1;
+    }
 
     // print command line line output
     printf("esp> ");
@@ -206,7 +213,7 @@ int main(int argc, char *argv[])
   freeInterpreterArguments(&evalArguments);
 
   //TODO: free all variables of arguments here
-  if (!eof)  
+  if (!eof)
     printf("Bye.\n");
   return 0;
 }
@@ -321,14 +328,18 @@ void memory(int program_loaded, unsigned char *data_segment,
   int number = (int) strtol(number_input, (char **) NULL, 10);
 
   char *type = strtok(NULL, " ");
-  if (strcmp(type, "int") == 0)
+  if (type == NULL || strcmp(type, "hex") == 0)
+  {
+    printf("Hex at %d: %x\n", number, *(data_segment + number));
+  }
+  else if (strcmp(type, "int") == 0)
   {
     printf("Integer at %d: %d\n", number, *(data_segment + number));
   }
   else if (strcmp(type, "bin") == 0)
   {
     int binary_digits = 8;
-    char *binary_number = malloc(binary_digits * sizeof(char));
+    char binary_number[9];
     //calculating the binary number
     binary(*(data_segment + number), binary_number, binary_digits);
     printf("Binary at %d: %s\n", number, binary_number);
@@ -336,10 +347,6 @@ void memory(int program_loaded, unsigned char *data_segment,
   else if (strcmp(type, "char") == 0)
   {
     printf("Char at %d: %c\n", number, *(data_segment + number));
-  }
-  else if (strcmp(type, "hex") == 0 || type == NULL)
-  {
-    printf("Hex at %d: %x\n", number, *(data_segment + number));
   }
 }
 
@@ -361,7 +368,8 @@ void show(int program_loaded, char *program_counter)
   printf("%.*s\n", size, program_counter);
 }
 
-void change(int program_loaded, unsigned char *data_segment)
+void change(int program_loaded, unsigned char *data_segment,
+            unsigned char *data_pointer)
 {
   if (program_loaded == NOT_LOADED)
   {
@@ -370,22 +378,23 @@ void change(int program_loaded, unsigned char *data_segment)
   }
 
   char *number_input = strtok(NULL, " ");
+  if(number_input == NULL)
+  {
+    *data_pointer = 0;
+    return;
+  }
   char *end_ptr;
   int number = (int) strtol(number_input, &end_ptr, 10);
-  if (end_ptr == number_input) // conversion failed
-  {
-    // default number: current position
-    number = 0;
-  }
+
 
   char *hex_byte_input = strtok(NULL, " ");
-  int hex_byte = (int) strtol(hex_byte_input, &end_ptr, 16);
-  if (end_ptr == hex_byte_input) // conversion failed
+  if(hex_byte_input == NULL)
   {
-    // default hex_byte: 0x0
-    hex_byte = 0;
+    data_segment[number] = 0;
+    return;
   }
-  *(data_segment + number) = (unsigned char) hex_byte;
+  int hex_byte = (int) strtol(hex_byte_input, &end_ptr, 16);
+  data_segment[number] = (unsigned char) hex_byte;
 }
 
 void binary(char number, char *binary_number, int digits)
