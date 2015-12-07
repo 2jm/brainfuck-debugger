@@ -28,7 +28,7 @@
 
 #define SUCCESS 1
 
-#define FILE_PARS_ERROR -3
+#define FILE_PARSE_ERROR -3
 #define FILE_READ_ERROR -4
 
 #define WRONG_USAGE_RETURN_CODE 1
@@ -263,7 +263,7 @@ int main(int argc, char *argv[])
     {
       return FILE_READ_ERROR_RETURN_CODE;
     }
-    if(return_code == FILE_PARS_ERROR)
+    if(return_code == FILE_PARSE_ERROR)
     {
       return FILE_PARS_ERROR_RETURN_CODE;
     }
@@ -308,6 +308,10 @@ int main(int argc, char *argv[])
           {
             program_loaded = NOT_LOADED;
           }
+        }
+        else
+        {
+          printf("[ERR] wrong parameter count\n");
         }
       }
       else if (strcmp(cmd, "run") == 0)
@@ -420,6 +424,12 @@ void breakProgram(int program_loaded, InterpreterArguments *arguments,
   }
   // get breakpoint position
   char *number_input = strtok(NULL, " ");
+  if(number_input == NULL)
+  {
+    printf("[ERR] wrong parameter count\n");
+    return;
+  }
+
   int number = (int) strtol(number_input, (char **) NULL, 10);
 
   // allow only positive breakpoints
@@ -644,7 +654,7 @@ int load (char *file_directory, InterpreterArguments *arguments, int bonus)
     if (bracket_counter != 0)
     {
       printf("[ERR] parsing of input failed\n");
-      return FILE_PARS_ERROR;
+      return FILE_PARSE_ERROR;
     }
   }
 
