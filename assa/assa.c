@@ -26,6 +26,17 @@
 #define STEP_STOP 1
 #define BREAKPOINT_STOP 2
 
+#define SUCCESS 1
+
+#define FILE_PARS_ERROR -3
+#define FILE_READ_ERROR -4
+
+#define WRONG_USAGE_RETURN_CODE 1
+#define OUT_OF_MEMORY_RETURN_CODE 2
+#define FILE_PARS_ERROR_RETURN_CODE 3
+#define FILE_READ_ERROR_RETURN_CODE 4
+
+
 typedef struct {
   int step_;
   int distance_;
@@ -54,6 +65,8 @@ typedef struct {
 } InterpreterArguments;
 
 
+
+void exitWrongUsage();
 
 void breakProgram(int program_loaded, InterpreterArguments *arguments,
                   size_t *breakpoint_size);
@@ -170,6 +183,10 @@ void freePointer(void **pointer);
 
 void freeDoublePointer(void ***pointer);
 
+void *saveMalloc(size_t size);
+
+void *saveRealloc(void* pointer, size_t size);
+
 void expandDataSegment (unsigned char **data_segment, size_t *data_length);
 
 void processLoop(InterpreterArguments *interpreter_arguments, int direction);
@@ -217,27 +234,46 @@ int main(int argc, char *argv[])
       {
         command_line_argument_b = 1;
       }
-
-      if (strcmp(argv[argument], "-e") == 0)
+      else if (strcmp(argv[argument], "-e") == 0)
       {
-        if(argc >= argument + 1)
+        if(argc >= argument + 2)
         {
           command_line_argument_e = 1;
-          command_line_argument_path = argv[argument + 1];
+          argument++;
+          command_line_argument_path = argv[argument];
         }
+        else
+        {
+          exitWrongUsage();
+        }
+      }
+      else
+      {
+        exitWrongUsage();
       }
     }
   }
 
   if(command_line_argument_e == 1)
   {
-    load(command_line_argument_path, &arguments, command_line_argument_b);
+    int return_code = load(command_line_argument_path, &arguments,
+                           command_line_argument_b);
+
+    if(return_code == FILE_READ_ERROR)
+    {
+      return FILE_READ_ERROR_RETURN_CODE;
+    }
+    if(return_code == FILE_PARS_ERROR)
+    {
+      return FILE_PARS_ERROR_RETURN_CODE;
+    }
+
     run(&arguments);
 
     freePointer((void**) &line);
     freeInterpreterArguments(&arguments);
 
-    return 0;
+    return EXIT_SUCCESS;
   }
 
 
@@ -263,7 +299,15 @@ int main(int argc, char *argv[])
         cmd = strtok(NULL, " ");
         if(cmd != NULL)
         {
-          program_loaded = load(cmd, &arguments, command_line_argument_b);
+          int return_code = load(cmd, &arguments, command_line_argument_b);
+          if(return_code == SUCCESS)
+          {
+            program_loaded = LOADED_FROM_FILE;
+          }
+          else
+          {
+            program_loaded = NOT_LOADED;
+          }
         }
       }
       else if (strcmp(cmd, "run") == 0)
@@ -354,11 +398,16 @@ int main(int argc, char *argv[])
   evalArguments.data_length_  = NULL;
   freeInterpreterArguments(&evalArguments);
 
-  //TODO: free all variables of arguments here
   if (!eof)
     printf("Bye.\n");
 
-  return 0;
+  return EXIT_SUCCESS;
+}
+
+void exitWrongUsage()
+{
+  printf("[ERR] usage: ./assa [-e brainfuck_filnename]\n");
+  exit(WRONG_USAGE_RETURN_CODE);
 }
 
 void breakProgram(int program_loaded, InterpreterArguments *arguments,
@@ -399,25 +448,13 @@ void breakProgram(int program_loaded, InterpreterArguments *arguments,
   if (arguments->breakpoint_count_ + 1 > *breakpoint_size)
   {
     *breakpoint_size *= 2;
-    arguments->breakpoints_ = realloc(arguments->breakpoints_,
+    arguments->breakpoints_ = saveRealloc(arguments->breakpoints_,
                                       *breakpoint_size * sizeof(int));
   }
 
   // add next breakpoint
   arguments->breakpoints_[arguments->breakpoint_count_] = number;
   arguments->breakpoint_count_++;
-
-//TODO: change every realloc to free the memory if NULL is returned:
-//  int *new_mem = realloc (breakpoints, ++breakpoint_count * sizeof (int));
-//  if (new_mem != NULL)
-//  {
-//    breakpoints = new_mem;
-//  }
-//  else
-//  {
-//    free (breakpoints);
-//    printf ("[ERR] out of memory\\n");
-//  }
 
   // sort breakpoints ascending (eg. 3 - 7 - 10)
   qsort(arguments->breakpoints_, arguments->breakpoint_count_, sizeof(int), compareFunction);
@@ -576,12 +613,13 @@ int load (char *file_directory, InterpreterArguments *arguments, int bonus)
   size_t program_size = 1024;
   int position = 0;
 
-  arguments->program_ = malloc(program_size);
+  arguments->program_ = saveMalloc(program_size);
+
 
   if ((file = fopen (file_directory, "r")) == NULL)
   {
     printf ("[ERR] reading the file failed\n");  //check if the file can be read
-    return NOT_LOADED;
+    return FILE_READ_ERROR;
   }
   else
   {
@@ -604,7 +642,10 @@ int load (char *file_directory, InterpreterArguments *arguments, int bonus)
     arguments->program_counter_ = arguments->program_;
 
     if (bracket_counter != 0)
-      printf ("[ERR] parsing of input failed\n");
+    {
+      printf("[ERR] parsing of input failed\n");
+      return FILE_PARS_ERROR;
+    }
   }
 
   fclose (file);
@@ -634,7 +675,7 @@ void eval (InterpreterArguments *arguments, char *input_bfstring, int bonus)
   }
 
   arguments->program_length_ = len+1;
-  arguments->program_ = malloc(arguments->program_length_ * sizeof(char));
+  arguments->program_ = saveMalloc(arguments->program_length_ * sizeof(char));
   //set program_counter_ to the beginning of the code
   arguments->program_counter_ = arguments->program_;
 
@@ -872,22 +913,22 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
 
   if(data_segment == NULL)
   {
-    interpreter_arguments.data_length_ = malloc(sizeof(size_t));
+    interpreter_arguments.data_length_ = saveMalloc(sizeof(size_t));
     *interpreter_arguments.data_length_ = 1024;
 
-    interpreter_arguments.data_segment_ = malloc(sizeof(unsigned char*));
+    interpreter_arguments.data_segment_ = saveMalloc(sizeof(unsigned char*));
     *interpreter_arguments.data_segment_ =
       calloc(*interpreter_arguments.data_length_, sizeof(unsigned char));
 
-    interpreter_arguments.data_pointer_ = malloc(sizeof(unsigned char*));
+    interpreter_arguments.data_pointer_ = saveMalloc(sizeof(unsigned char*));
     *interpreter_arguments.data_pointer_ = *interpreter_arguments.data_segment_;
   }
 
   interpreter_arguments.jumps_.allocated_memory_ = 200;
-  interpreter_arguments.jumps_.array_ = (Jump*) malloc(
+  interpreter_arguments.jumps_.array_ = (Jump*) saveMalloc(
     interpreter_arguments.jumps_.allocated_memory_ * sizeof(Jump));
 
-  //*interpreter_arguments.jump_points_ = malloc(1);
+  //*interpreter_arguments.jump_points_ = saveMalloc(1);
 
   return interpreter_arguments;
 }
@@ -920,6 +961,28 @@ void freeDoublePointer(void ***pointer)
     free(*pointer);
     *pointer = NULL;
   }
+}
+
+void *saveMalloc(size_t size)
+{
+  void *pointer = malloc(size);
+  if(pointer == NULL)
+  {
+    printf("[ERR] out of memory\n");
+    exit(OUT_OF_MEMORY_RETURN_CODE);
+  }
+  return pointer;
+}
+
+void *saveRealloc(void* pointer, size_t size)
+{
+  pointer = realloc(pointer, size);
+  if(pointer == NULL)
+  {
+    printf("[ERR] out of memory\n");
+    exit(OUT_OF_MEMORY_RETURN_CODE);
+  }
+  return pointer;
 }
 
 void expandDataSegment (unsigned char **data_segment, size_t *data_length)
@@ -1028,7 +1091,7 @@ void insertJump(Jumps *jumps, Jump jump)
   {
     //extend array
     jumps->allocated_memory_ *= 2;
-    jumps->array_ = realloc(jumps->array_, jumps->allocated_memory_ * sizeof(Jump));
+    jumps->array_ = saveRealloc(jumps->array_, jumps->allocated_memory_ * sizeof(Jump));
   }
 }
 
@@ -1038,7 +1101,7 @@ void newJumpPoint(InterpreterArguments *interpreter_arguments)
       *interpreter_arguments->size_of_jump_points_)
   {
     interpreter_arguments->jump_points_ =
-      realloc(interpreter_arguments->jump_points_ , sizeof(char) *
+      saveRealloc(interpreter_arguments->jump_points_ , sizeof(char) *
                                                     **interpreter_arguments->data_pointer_);
 
     *interpreter_arguments->size_of_jump_points_ =
