@@ -137,7 +137,7 @@ int interpreter (InterpreterArguments *interpreter_arguments)
     else if (*(interpreter_arguments->program_counter_) == jump_point)
     {
       newJumpPoint(interpreter_arguments);
-      **interpreter_arguments->data_pointer_ = 0;
+      //**interpreter_arguments->data_pointer_ = 0;
 
       interpreter_arguments->program_counter_ += direction;
     }
@@ -202,7 +202,9 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
     NULL,
     0,
     0,
-    {0, 0, NULL}
+    {0, 0, NULL},
+    NULL,
+    NULL
   };
 
   if(data_segment == NULL)
@@ -221,6 +223,8 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
   interpreter_arguments.jumps_.allocated_memory_ = 200;
   interpreter_arguments.jumps_.array_ = (Jump*) malloc(
     interpreter_arguments.jumps_.allocated_memory_ * sizeof(Jump));
+
+  //*interpreter_arguments.jump_points_ = malloc(1);
 
   return interpreter_arguments;
 }

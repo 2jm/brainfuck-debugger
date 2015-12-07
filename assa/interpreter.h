@@ -39,7 +39,7 @@ typedef struct {
   unsigned int step_counter_; //counts the steps the program makes altogether
   Jumps jumps_;
   char** jump_points_;
-  char *size_of_jump_points_;
+  int *size_of_jump_points_;
 } InterpreterArguments;
 
 
