@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
   printf("esp> ");
   while (fgets(line, (int) line_size, stdin) != 0 && strcmp(line, "quit\n"))
   { 
-    eof = 0;
+    eof = 0;  //if there is an input it's not EOF
     // fgets adds at the end '\n\0'. Therefore override '\n' with '\0'
     line[strlen(line) - 1] = '\0';
 
@@ -196,7 +196,8 @@ int main(int argc, char *argv[])
       }
     }
     else if(!cmd)
-      eof = 1;
+      eof = 1;  //if there's no input, it could be EOF
+                //if it's not, loop will run again
 
     // print command line line output
     printf("esp> ");
@@ -215,6 +216,7 @@ int main(int argc, char *argv[])
   //TODO: free all variables of arguments here
   if (!eof)  
     printf("Bye.\n");
+
   return 0;
 }
 
