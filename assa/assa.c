@@ -1,7 +1,7 @@
-//-----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // assa.c
 //
-// Strings and memory management
+// Assignment A - Brainfuck “gdb”
 //
 // Group: 13020 study assistant Angela Promitzer
 //
@@ -9,14 +9,14 @@
 //          Matthias Klotz  1530653
 //          Johannes Kopf   1431505
 //
-// Latest Changes: 03.12.2015 (by Johannes Kopf)
-//-----------------------------------------------------------------------------
+// Latest Changes: 08.12.2015 (by Jonas Juffinger)
+//------------------------------------------------------------------------------
 //
 
-#include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+
 
 #define NOT_LOADED       0
 #define LOADED_FROM_FILE 1
@@ -37,68 +37,151 @@
 #define FILE_READ_ERROR_RETURN_CODE 4
 
 
+
+//------------------------------------------------------------------------------
+///
+/// This struct holds a single jump in the program, it's needed for reverse step
+///
+/// e.g. +++>[+.-]+++ This program jumps on step 5 the distance 4
+//
 typedef struct {
-  int step_;
-  int distance_;
+  int step_;                     //defines at what step the program was jumping
+  int distance_;                 //the jumps distance, positive or negative
 } Jump;
 
+
+//------------------------------------------------------------------------------
+///
+/// This struct holds all the jumps in an array
+//
 typedef struct {
-  unsigned int count_;
-  size_t allocated_memory_;
-  Jump *array_;
+  unsigned int count_;           //count of the jumps
+  size_t allocated_memory_;      //size of the Jump array
+  Jump *array_;                  //array where the jumps are stored
 } Jumps;
 
+
+//------------------------------------------------------------------------------
+///
+/// This struct holds all the variables the interpreter needs to run
+//
 typedef struct {
-  char *program_; //array where the program is stored
-  size_t program_length_; //size of the whole program array
+  char *program_;                //array where the program is stored
+  size_t program_length_;        //size of the program array
   unsigned char **data_segment_; //pointer to the data segment
-  size_t *data_length_;  //length of the data segment
-  char *program_counter_; //pointer pointing to the current command
+  size_t *data_length_;          //length of the data segment
+  char *program_counter_;        //pointer pointing to the current command
   unsigned char **data_pointer_; //pointer pointing to the current data byte
-  int steps_; //the maximal count of commands to run, 0 if infinity
-  int *breakpoints_;  //array with the breakpoints
-  size_t breakpoint_count_; //size of the breakpoint array
-  unsigned int step_counter_; //counts the steps the program makes altogether
-  Jumps jumps_;
+  int steps_;                    //the maximal steps to run, 0 if infinity
+  int *breakpoints_;             //array with the breakpoints
+  size_t breakpoint_count_;      //size of the breakpoint array
+  unsigned int step_counter_;    //counts the steps the program makes altogether
+  Jumps jumps_;                  //instance if the Jumps struct
   char** jump_points_;
   int *size_of_jump_points_;
 } InterpreterArguments;
 
+
+//------------------------------------------------------------------------------
+///
+/// This struct holds the command line arguments
+//
 typedef struct {
-  int e_;
-  char *path;
-  int b_;
+  int e_;                        //-e argument
+  char *path;                    //path behind the -e argument
+  int b_;                        //-b argument
 } CommandLineArguments;
 
 
+
+
+
+//------------------------------------------------------------------------------
+///
+/// This function parses the command line arguments in argc and argv and fills
+/// the CommandLineArguments struct
+///
+/// @param command_line_arguments pointer to the struct to fill
+/// @param argc the argc argument from the main
+/// @param argv the argv argument from the main
+//
 void parseCommandLineArguments(CommandLineArguments *command_line_arguments,
                                int argc, char *argv[]);
 
+
+//------------------------------------------------------------------------------
+///
+/// This function prints the error string for the wrong used program and exits
+/// with the corresponding error code
+//
 void exitWrongUsage();
 
+
+//------------------------------------------------------------------------------
+///
+/// This function is called when the -e argument was passed. It loads the file
+/// runs it and returns.
+///
+/// @param pointer to the interpreter arguments
+/// @param pointer to the command line arguments
+//
 int runOnce(InterpreterArguments *arguments,
              CommandLineArguments *command_line_arguments);
 
-void breakProgram(int program_loaded, InterpreterArguments *arguments,
-                  size_t *breakpoint_size);
 
+//------------------------------------------------------------------------------
+///
+///
+//
+void setBreakpoint(int program_loaded, InterpreterArguments *arguments,
+                   size_t *breakpoint_size);
+
+
+//------------------------------------------------------------------------------
+///
+///
+//
 int compareFunction (const void *a, const void *b);
 
+
+//------------------------------------------------------------------------------
+///
+///
+//
 void step(int program_loaded, InterpreterArguments *arguments, int bonus);
 
+
+//------------------------------------------------------------------------------
+///
+///
+//
 void memory(int program_loaded, unsigned char *data_segment,
             unsigned char *data_pointer_);
 
+
+//------------------------------------------------------------------------------
+///
+///
+//
 void show(int program_loaded, char *program_counter);
 
+
+//------------------------------------------------------------------------------
+///
+///
+//
 void change(int program_loaded, unsigned char *data_segment,
             unsigned char *data_pointer);
 
+
+//------------------------------------------------------------------------------
+///
+///
+//
 void binary(char number, char *binary_number, int digits);
 
 
-
-//-----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 ///
 /// Loading the code character by character out of a file and write it into an
 /// array.
@@ -111,7 +194,8 @@ void binary(char number, char *binary_number, int digits);
 int load(char *filedirectory, InterpreterArguments *interpreter_arguments,
          int bonus);
 
-//-----------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
 ///
 /// Executing the bf-code for a set number of steps (or till the code ends) by
 /// calling the interpreter
@@ -127,7 +211,8 @@ int load(char *filedirectory, InterpreterArguments *interpreter_arguments,
 //
 int run(InterpreterArguments *interpreter_arguments);
 
-//-----------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
 ///
 /// Manipulating the datasegment with a user entered bf-code
 ///
@@ -141,7 +226,8 @@ int run(InterpreterArguments *interpreter_arguments);
 //
 void eval(InterpreterArguments *arguments, char *input_bfstring, int bonus);
 
-//-----------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
 ///
 /// Checking single character if it is bfCode and checking if bracket is
 /// opened or closed
@@ -158,17 +244,20 @@ void eval(InterpreterArguments *arguments, char *input_bfstring, int bonus);
 int check_code(InterpreterArguments *interpreter_arguments, int character,
                int *position, int bonus);
 
+
 //------------------------------------------------------------------------------
 ///
 /// Interprets and runs the program code in the program array
 ///
-/// @param interpreter_arguments pointer to an InterpreterArguments struct with all the arguments
+/// @param interpreter_arguments pointer to an InterpreterArguments struct with
+///                              all the arguments
 ///
 /// @return  0 if the program ran to the end
 ///         -1 if the program ran the specified steps
 ///         -2 if the program stopped because of a breakpoint
 //
 int interpreter(InterpreterArguments *interpreter_arguments);
+
 
 //------------------------------------------------------------------------------
 ///
@@ -178,34 +267,125 @@ int interpreter(InterpreterArguments *interpreter_arguments);
 //
 void resetInterpreterArguments(InterpreterArguments *interpreter_arguments);
 
+
 //------------------------------------------------------------------------------
 ///
 /// This function returns an InterpreterArguments struct
+/// For the data_segment are allocated 1024 bytes
 ///
-/// The data_segment is 1024 bytes big an allocated
+/// If you want to reuse the data_segment with another code e.g. for the eval
+/// command you can pass the three variables
+///
+/// @param data_segment pointer to the data segment to use
+/// @param data_length pointer to the length of the data_segment
+/// @param data_pointer pointer to the data pointer of the bf program
+///
+/// @return the InterpreterArguments struct
 //
 InterpreterArguments getUsableInterpreterArgumentsStruct(
   unsigned char **data_segment, size_t *data_length,
   unsigned char **data_pointer);
 
+
+//------------------------------------------------------------------------------
+///
+/// This function frees all allocated memory in the InterpreterArguments struct
+///
+/// @param pointer to the InterpreterArguments struct
+//
 void freeInterpreterArguments(InterpreterArguments *interpreterArguments);
 
+
+//------------------------------------------------------------------------------
+///
+/// This function frees the memory the pointer is pointing to and sets it NULL
+///
+/// @param pointer to a pointer
+//
 void freePointer(void **pointer);
 
+
+//------------------------------------------------------------------------------
+///
+/// This function free the memory of the double pointer and sets it NULL
+///
+/// @param pointer to a double pointer
+//
 void freeDoublePointer(void ***pointer);
 
-void *saveMalloc(size_t size);
 
-void *saveRealloc(void* pointer, size_t size);
+//------------------------------------------------------------------------------
+///
+/// This function allocates size memory and controls if there was an error and
+/// reacts to it
+///
+/// @param size to allocate
+///
+/// @return void pointer to the allocated memory
+//
+void* saveMalloc(size_t size);
 
+
+//------------------------------------------------------------------------------
+///
+/// This function reallocates a memory and controls if there was an error and
+/// reacts to it
+///
+/// @param pointer to the memory that should be resized
+/// @param size to reallocate
+///
+/// @return void pointer to the allocated memory
+//
+void* saveRealloc(void* pointer, size_t size);
+
+
+//------------------------------------------------------------------------------
+///
+/// Expands the data segment by twice the size and sets the new memory to 0
+///
+/// @param data_segment double pointer to the data segment
+/// @param data_length current size of the data segment
+//
 void expandDataSegment (unsigned char **data_segment, size_t *data_length);
 
+
+//------------------------------------------------------------------------------
+///
+/// Processes a brainfuck loop
+/// If the direction is positive it checks the condition, if it should jump it
+/// calls jumpToMatchingBrace
+/// If the direction is negative it searches for the jump in the jump array
+/// and jumps backward if it finds a jump
+///
+/// @param interpreter_arguments all the interpreter arguments
+/// @param direction the program runs
+//
 void processLoop(InterpreterArguments *interpreter_arguments, int direction);
 
+
+//------------------------------------------------------------------------------
+///
+/// This function jumps to the corresponding bracket in a loop
+///
+/// @param interpreter_arguments all the interpreter arguments
+//
 int jumpToMatchingBrace(InterpreterArguments *interpreter_arguments);
 
+
+//------------------------------------------------------------------------------
+///
+/// This function inserts a jump in the jump array and expands it if necessary
+///
+/// @param jumps pointer to the Jumps struct
+/// @param jump the jump to insert
+//
 void insertJump(Jumps *jumps, Jump jump);
 
+
+//------------------------------------------------------------------------------
+///
+/// TODO
+//
 void newJumpPoint(InterpreterArguments *interpreter_arguments);
 
 
@@ -225,8 +405,6 @@ int main(int argc, char *argv[])
   InterpreterArguments arguments =
     getUsableInterpreterArgumentsStruct(NULL, NULL, NULL);
 
-
-
   CommandLineArguments command_line_arguments = {0, NULL, 0};
   int eof = 0;
 
@@ -236,7 +414,6 @@ int main(int argc, char *argv[])
   {
     return runOnce(&arguments, &command_line_arguments);
   }
-
 
   int program_loaded = NOT_LOADED;
   size_t breakpoint_size = 10;
@@ -312,7 +489,8 @@ int main(int argc, char *argv[])
           else if(stop_reason == BREAKPOINT_STOP) // stopped at breakpoint
           {
             // shift unused breakpoints left to remove already used breakpoint
-            memmove(arguments.breakpoints_, arguments.breakpoints_ + 1, (arguments.breakpoint_count_ - 1) * sizeof(int));
+            memmove(arguments.breakpoints_, arguments.breakpoints_ + 1,
+                    (arguments.breakpoint_count_ - 1) * sizeof(int));
             arguments.breakpoint_count_--;
           }
         }
@@ -328,7 +506,7 @@ int main(int argc, char *argv[])
       }
       else if (strcmp(cmd, "break") == 0)
       {
-        breakProgram(program_loaded, &arguments, &breakpoint_size);
+        setBreakpoint(program_loaded, &arguments, &breakpoint_size);
       }
       else if (strcmp(cmd, "step") == 0)
       {
@@ -438,8 +616,8 @@ int runOnce(InterpreterArguments *arguments,
 }
 
 
-void breakProgram(int program_loaded, InterpreterArguments *arguments,
-                  size_t *breakpoint_size)
+void setBreakpoint(int program_loaded, InterpreterArguments *arguments,
+                   size_t *breakpoint_size)
 {
   if (program_loaded != LOADED_FROM_FILE)
   {
@@ -491,7 +669,8 @@ void breakProgram(int program_loaded, InterpreterArguments *arguments,
   arguments->breakpoint_count_++;
 
   // sort breakpoints ascending (eg. 3 - 7 - 10)
-  qsort(arguments->breakpoints_, arguments->breakpoint_count_, sizeof(int), compareFunction);
+  qsort(arguments->breakpoints_, arguments->breakpoint_count_, sizeof(int),
+        compareFunction);
   return;
 }
 
@@ -573,7 +752,8 @@ void show(int program_loaded, char *program_counter)
   }
   char *size_input = strtok(NULL, " ");
   // 10 is default size
-  int size = (size_input != NULL) ? (int) strtol(size_input, (char **) NULL, 10) : 10;
+  int size = (size_input != NULL) ?
+             (int) strtol(size_input, (char **) NULL, 10) : 10;
 
   // Source: http://stackoverflow
   // .com/questions/4214314/get-a-substring-of-a-char
@@ -775,7 +955,8 @@ int interpreter (InterpreterArguments *interpreter_arguments)
 
   //create a local variable for steps because it should not be changed
   //if -1 runs infinitely long (to the end of the program)
-  int steps = (interpreter_arguments->steps_ == 0) ? -1 : interpreter_arguments->steps_;
+  int steps = (interpreter_arguments->steps_ == 0) ?
+              -1 : interpreter_arguments->steps_;
 
   //the program must run shifted one to the left, increment at the end
   if(direction == -1)
@@ -786,9 +967,11 @@ int interpreter (InterpreterArguments *interpreter_arguments)
   {
     //check if a breakpoint is reached
     int *breakpoint = interpreter_arguments->breakpoints_;
-    for (; breakpoint < interpreter_arguments->breakpoints_ + interpreter_arguments->breakpoint_count_; breakpoint++)
+    for (; breakpoint < interpreter_arguments->breakpoints_ +
+                        interpreter_arguments->breakpoint_count_; breakpoint++)
     {
-      if (interpreter_arguments->program_ + *breakpoint == interpreter_arguments->program_counter_)
+      if (interpreter_arguments->program_ + *breakpoint ==
+          interpreter_arguments->program_counter_)
       {
         break_loop = 1;
       }
@@ -796,15 +979,15 @@ int interpreter (InterpreterArguments *interpreter_arguments)
     if (break_loop)
       break;
 
-    //printf("%lu %c: ", interpreter_arguments->program_counter_ - interpreter_arguments->program_, *(interpreter_arguments->program_counter_));
-
     // ------------  >  ------------
     if (*(interpreter_arguments->program_counter_) == move_forward)
     {
       if (++(*interpreter_arguments->data_pointer_) >
-          *interpreter_arguments->data_segment_ + *(interpreter_arguments->data_length_))
+          *interpreter_arguments->data_segment_ +
+            *(interpreter_arguments->data_length_))
       {
-        expandDataSegment(interpreter_arguments->data_segment_, interpreter_arguments->data_length_);
+        expandDataSegment(interpreter_arguments->data_segment_,
+                          interpreter_arguments->data_length_);
       }
       interpreter_arguments->program_counter_ += direction;
     }
@@ -813,7 +996,8 @@ int interpreter (InterpreterArguments *interpreter_arguments)
       // ------------  <  ------------
     else if (*(interpreter_arguments->program_counter_) == move_back)
     {
-      if (--(*interpreter_arguments->data_pointer_) < *interpreter_arguments->data_segment_)
+      if (--(*interpreter_arguments->data_pointer_) <
+          *interpreter_arguments->data_segment_)
       {
         (*interpreter_arguments->data_pointer_)++;
       }
@@ -886,7 +1070,8 @@ int interpreter (InterpreterArguments *interpreter_arguments)
     else if (*(interpreter_arguments->program_counter_) == jump)
     {
       interpreter_arguments->program_counter_ =
-        interpreter_arguments->jump_points_[**interpreter_arguments->data_pointer_];
+        interpreter_arguments->jump_points_[
+                                        **interpreter_arguments->data_pointer_];
 
       interpreter_arguments->program_counter_ += direction;
     }
@@ -997,7 +1182,7 @@ void freeDoublePointer(void ***pointer)
   }
 }
 
-void *saveMalloc(size_t size)
+void* saveMalloc(size_t size)
 {
   void *pointer = malloc(size);
   if(pointer == NULL)
@@ -1008,7 +1193,7 @@ void *saveMalloc(size_t size)
   return pointer;
 }
 
-void *saveRealloc(void* pointer, size_t size)
+void* saveRealloc(void* pointer, size_t size)
 {
   pointer = realloc(pointer, size);
   if(pointer == NULL)
@@ -1072,8 +1257,6 @@ void processLoop(InterpreterArguments *interpreter_arguments, int direction)
           interpreter_arguments->jumps_.array_[search_loop_index].distance_;
 
         jump_found = 1;
-
-        //printf("Program was jumping on step %d, jumping back by %d", jumps->array_[search_loop_index].step_, -jumps->array_[search_loop_index].distance_);
       }
     }
 
@@ -1125,7 +1308,8 @@ void insertJump(Jumps *jumps, Jump jump)
   {
     //extend array
     jumps->allocated_memory_ *= 2;
-    jumps->array_ = saveRealloc(jumps->array_, jumps->allocated_memory_ * sizeof(Jump));
+    jumps->array_ = saveRealloc(jumps->array_,
+                                jumps->allocated_memory_ * sizeof(Jump));
   }
 }
 
@@ -1135,8 +1319,8 @@ void newJumpPoint(InterpreterArguments *interpreter_arguments)
       *interpreter_arguments->size_of_jump_points_)
   {
     interpreter_arguments->jump_points_ =
-      saveRealloc(interpreter_arguments->jump_points_ , sizeof(char) *
-                                                    **interpreter_arguments->data_pointer_);
+      saveRealloc(interpreter_arguments->jump_points_ ,
+                  sizeof(char) * **interpreter_arguments->data_pointer_);
 
     *interpreter_arguments->size_of_jump_points_ =
       **interpreter_arguments->data_pointer_;
@@ -1144,6 +1328,4 @@ void newJumpPoint(InterpreterArguments *interpreter_arguments)
 
   interpreter_arguments->jump_points_[**interpreter_arguments->data_pointer_] =
     interpreter_arguments->program_counter_;
-
-
 }
