@@ -847,7 +847,7 @@ int load(char *file_directory, InterpreterArguments *arguments, int bonus)
       if (position == program_size - 1)
       {
         program_size *= 2;
-        arguments->program_ = realloc(arguments->program_, program_size);
+        arguments->program_ = saveRealloc(arguments->program_, program_size);
       }
     }
     arguments->program_[position] = '\0';  //end of string
@@ -1207,7 +1207,7 @@ void *saveRealloc(void *pointer, size_t size)
 void expandDataSegment(unsigned char **data_segment, size_t *data_length)
 {
   *data_length *= 2;
-  *data_segment = realloc(*data_segment, *data_length);
+  *data_segment = saveRealloc(*data_segment, *data_length);
 
   //set the new memory to 0
   memset(*data_segment + (*data_length) / 2, 0, (*data_length) / 2);
