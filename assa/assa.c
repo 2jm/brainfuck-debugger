@@ -81,6 +81,7 @@ typedef struct
   Jumps jumps_;                  //instance if the Jumps struct
   char **jump_points_;
   int *size_of_jump_points_;
+  int loaded_language;           //language loaded in program (bf or BIO)
 } InterpreterArguments;
 
 
@@ -434,15 +435,33 @@ int main(int argc, char *argv[])
     // fgets adds at the end '\n\0'. Therefore override '\n' with '\0'
     line[strlen(line) - 1] = '\0';
 
-    char *cmd;
-    cmd = strtok(line, "  ");
+    char *cmd = strtok(line, "  ");
     if (cmd)
     {
       if (strcmp(cmd, "load") == 0)
       {
+        // get path to file
         cmd = strtok(NULL, " ");
         if (cmd != NULL)
         {
+          // get a pointer to the first occurrence of '.'
+          char *ext = strrchr(cmd, '.');
+          if (ext)
+          {
+            if(strcmp(ext, ".bio") == 0)
+            {
+              arguments.loaded_language = 1;
+            }
+            else // can be .bf or anything else to use bf input language
+            {
+              arguments.loaded_language = 0;
+            }
+          }
+          else // no file extension, use bf as default
+          {
+            arguments.loaded_language = 0;
+          }
+
           int return_code = load(cmd, &arguments, command_line_arguments.b_);
           if (return_code == SUCCESS)
           {
@@ -475,7 +494,6 @@ int main(int argc, char *argv[])
 
             // TODO: what should happen, if run is called twice?
             // breakpoint reset
-            //memset(arguments.breakpoints_, 0, breakpoint_size * sizeof(int));
             free(arguments.breakpoints_);
             arguments.breakpoints_ = NULL;
             breakpoint_size = 10;
@@ -527,7 +545,7 @@ int main(int argc, char *argv[])
                *arguments.data_pointer_);
       }
     }
-    else // Das kann man weglassen if(!cmd)
+    else
     {
       eof = 1;  //if there's no input, it could be EOF
       //if it's not, loop will run again
@@ -1127,7 +1145,8 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
     0,
     {0, 0, NULL},
     NULL,
-    NULL
+    NULL,
+    -1
   };
 
   if (data_segment == NULL)
