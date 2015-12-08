@@ -99,6 +99,18 @@ typedef struct
 
 //------------------------------------------------------------------------------
 ///
+/// This struct represents a stack that is used in BIO to remember the position
+/// of opening brackets in the loaded program
+//
+typedef struct Loop_
+{
+  char *data_ptr_;
+  struct Loop_ *next;
+  int cell_;
+} Loop;
+
+//------------------------------------------------------------------------------
+///
 /// This function parses the command line arguments in argc and argv and fills
 /// the CommandLineArguments struct
 ///
@@ -195,22 +207,6 @@ void binary(char number, char *binary_number, int digits);
 int load(char *filedirectory, InterpreterArguments *interpreter_arguments,
          int bonus);
 
-
-//------------------------------------------------------------------------------
-///
-/// Executing the bf-code for a set number of steps (or till the code ends) by
-/// calling the interpreter
-///
-/// @param *program Array in which the bf-code is saved
-/// @param **data   Datasegment
-/// @param *data_length length of the datasegment
-/// @param **programm_counter counter for position in the code where the
-///        interpreter should start
-/// @param **data_pointer points at the actual position in the datasegment
-/// @param *breakpoints array where the positions of the breakpoints are saved
-///
-//
-int run(InterpreterArguments *interpreter_arguments);
 
 
 //------------------------------------------------------------------------------
@@ -390,6 +386,21 @@ void insertJump(Jumps *jumps, Jump jump);
 void newJumpPoint(InterpreterArguments *interpreter_arguments);
 
 
+int interpreterBio(InterpreterArguments *interpreter_arguments);
+
+
+int loadBio(char *file_directory, InterpreterArguments *arguments);
+
+
+int getNextCmd(char **program_ctr, int *cell);
+
+
+void push(Loop **top, char *data_ptr, int *cell);
+
+
+char *pop(Loop **top);
+
+
 //------------------------------------------------------------------------------
 ///
 /// The main program.
@@ -446,7 +457,7 @@ int main(int argc, char *argv[])
         {
           // get a pointer to the first occurrence of '.'
           char *ext = strrchr(cmd, '.');
-          if (ext)
+          if (command_line_arguments.b_ && ext) //TODO: b_ == 1?
           {
             if(strcmp(ext, ".bio") == 0)
             {
@@ -457,12 +468,19 @@ int main(int argc, char *argv[])
               arguments.loaded_language = 0;
             }
           }
-          else // no file extension, use bf as default
+          else // no file extension or bonus not set, use bf as default
           {
             arguments.loaded_language = 0;
           }
-
-          int return_code = load(cmd, &arguments, command_line_arguments.b_);
+          int return_code;
+          if(arguments.loaded_language == 0)
+          {
+            return_code = load(cmd, &arguments, command_line_arguments.b_);
+          }
+          else if(arguments.loaded_language == 1)
+          {
+            return_code = loadBio(cmd, &arguments);
+          }
           if (return_code == SUCCESS)
           {
             program_loaded = LOADED_FROM_FILE;
@@ -485,8 +503,15 @@ int main(int argc, char *argv[])
         }
         else
         {
-          int stop_reason = run(&arguments);
-
+          int stop_reason;
+          if(arguments.loaded_language == 0)
+          {
+            stop_reason = interpreter(&arguments);
+          }
+          else if(arguments.loaded_language == 1)
+          {
+            stop_reason = interpreterBio(&arguments);
+          }
           if (stop_reason == REGULAR_STOP) // ran to the end
           {
             // code reset
@@ -571,6 +596,239 @@ int main(int argc, char *argv[])
   return EXIT_SUCCESS;
 }
 
+void push(Loop **top, char *data_ptr, int *cell)
+{
+  // make new stack item and copy data to it:
+  Loop *new_item = malloc(sizeof(Loop));
+  new_item->data_ptr_ = data_ptr;
+  new_item->cell_ = *cell;
+
+  new_item->next = *top;    // next points to previous top
+  *top = new_item;          // top now points to new item
+}
+
+char *pop(Loop **top)
+{
+  Loop *old_top = *top;       // remember the old top
+  char *data_ptr = old_top->data_ptr_;   // remember the old data
+  *top = old_top->next;       // move top down
+  free(old_top);              // now we can free the old StackItem
+  return data_ptr;            // and return the data we remembered
+}
+
+// TODO: only reserve 3 chars in interpreter_arguments->data_segment_ for BIO (as is written in specs of BIO)
+int interpreterBio(InterpreterArguments *interpreter_arguments)
+{
+  int *cell = calloc(1, sizeof(int));
+  Loop *loop_stack = NULL;
+
+  for (; *(interpreter_arguments->program_counter_) != '\0';
+         interpreter_arguments->program_counter_++)
+  {
+    if (*(interpreter_arguments->program_counter_ + 1) == '\0')
+    {
+      break;
+    }
+    int cmd = getNextCmd(&interpreter_arguments->program_counter_, cell);
+    if (cmd == -1)
+    {
+      //failed
+      return -1;
+    }
+    else if (cmd == 0)
+    {
+      (*(interpreter_arguments->data_segment_))[*cell]++;
+    }
+    else if (cmd == 1)
+    {
+      (*(interpreter_arguments->data_segment_))[*cell]--;
+    }
+    else if (cmd == 2)
+    {
+      if ((*(interpreter_arguments->data_segment_))[*cell] == 0)
+      {
+        // go to matching end bracket
+        int found_right = 1;
+        while(found_right != 0)
+        {
+          interpreter_arguments->program_counter_++;
+          if(*(interpreter_arguments->program_counter_) == '}')
+          {
+            found_right--;
+          }
+          else if(*(interpreter_arguments->program_counter_) == '{')
+          {
+            found_right++;
+          }
+        }
+        interpreter_arguments->program_counter_--;
+      }
+
+      // push start position of loop
+      push(&loop_stack, interpreter_arguments->program_counter_, cell);
+    }
+    else if (cmd == 3)
+    {
+      if((*(interpreter_arguments->data_segment_))[loop_stack->cell_] != 0)
+      {
+        if (loop_stack == NULL)
+        {
+          // TODO: do this in loadBio or make new return state for interpreter??
+          // too much closing brackets
+          return -1;
+        }
+        interpreter_arguments->program_counter_ = loop_stack->data_ptr_;
+      }
+      else
+      {
+        pop(&loop_stack);
+      }
+    }
+    else if (cmd == 4)
+    {
+      putchar((*(interpreter_arguments->data_segment_))[*cell]);
+    }
+  }
+  return REGULAR_STOP;
+}
+
+int getNextCmd(char **program_ctr, int *cell)
+{
+  int ret = -1;
+  char first = **program_ctr;
+  char second = *(*program_ctr + 1);
+
+  if (first == '}' && second == ';')
+  {
+    (*program_ctr)++;
+    return 3;
+  }
+  if (second == 'o')
+  {
+    if (first == '0')
+    {
+      ret = 0; // Increment the specified block
+    }
+    else if (first == '1')
+    {
+      ret = 1; // Decrement the specified block
+    }
+    // get the correct cell (either x -> 0, y -> 1, z -> 2)
+    *cell = *(*program_ctr + 2) - 'x';
+    if (0 <= *cell && *cell <= 2 && *(*program_ctr + 3) == ';')
+    {
+      //0ox;  0oy;  0oz;
+      *program_ctr += 3;
+    }
+    else
+    {
+      ret = -1;
+    }
+  }
+  else if (second == 'i')
+  {
+    if (first == '0')
+    {
+      ret = 2; // While the block is not 0
+    }
+    else if (first == '1')
+    {
+      ret = 4; // Output the block
+    }
+    // get the correct cell (either x -> 0, y -> 1, z -> 2)
+    *cell = *(*program_ctr + 2) - 'x';
+    if (0 <= *cell && *cell <= 2)
+    {
+      if (!((ret == 2 && *(*program_ctr + 3) == '{') || (ret == 4 && *(*program_ctr + 3) == ';')))
+      {
+        ret = -1;
+      }
+      //0ox;  0oy;  0oz;  Oix{  etc.
+      *program_ctr += 3;
+    }
+    else
+    {
+      ret = -1;
+    }
+  }
+  return ret;
+}
+
+int loadBio(char *file_directory, InterpreterArguments *arguments)
+{
+  FILE *file;
+
+  if ((file = fopen(file_directory, "r")) == NULL)
+  {
+    printf("[ERR] reading the file failed\n");
+    return NOT_LOADED;
+  }
+
+  int character; // has to be a integer to read EOF as -1
+  int position = 0;
+  size_t program_size = 1024;
+  arguments->program_ = saveMalloc(program_size);
+  int comment = 0;
+
+  //read the file char by char and write it into an array
+  while ((character = fgetc(file)) != EOF)
+  {
+    if (comment == 1)
+    {
+      if (character == '\n')
+      {
+        //comment ended
+        comment = 0;
+      }
+      continue;
+    }
+    if (character == '/')
+    {
+      if ((character = fgetc(file)) == EOF)
+      {
+        break;
+      }
+      else
+      {
+        if (character == '/')
+        {
+          // double "/" = comment
+          comment = 1;
+          continue;
+        }
+      }
+    }
+    if (character == '0' || character == '1' || character == 'o' ||
+        character == 'i' || character == 'x' || character == 'y' ||
+        character == 'z' || character == '{' || character == '}' ||
+        character == ';')
+    {
+      // get more program memory if the file is too long
+      if (position == program_size)
+      {
+        program_size *= 2;
+        arguments->program_ = saveRealloc(arguments->program_, program_size);
+      }
+
+      arguments->program_[position++] = (char) character;
+    }
+  }
+  arguments->program_[position] = '\0';  //end of string
+  arguments->program_length_ = program_size * sizeof(char);
+  //set program_counter_ to the beginning of the code
+  arguments->program_counter_ = arguments->program_;
+
+  if (arguments->program_[position - 1] != ';')
+  {
+    printf("[ERR] parsing of input failed\n");
+    return FILE_PARSE_ERROR;
+  }
+
+  fclose(file);
+
+  return LOADED_FROM_FILE;
+}
+
 void exitWrongUsage()
 {
   printf("[ERR] usage: ./assa [-e brainfuck_filnename]\n");
@@ -626,7 +884,7 @@ int runOnce(InterpreterArguments *arguments,
     return FILE_PARS_ERROR_RETURN_CODE;
   }
 
-  run(arguments);
+  interpreter(arguments);
 
   freeInterpreterArguments(arguments);
 
@@ -840,58 +1098,46 @@ int load(char *file_directory, InterpreterArguments *arguments, int bonus)
 {
   resetInterpreterArguments(arguments);
   FILE *file;
-  int character; // has to be a integer to read EOF as -1
-  int bracket_counter = 0;
-  size_t program_size = 1024;
-  int position = 0;
-
-  arguments->program_ = saveMalloc(program_size);
-
 
   if ((file = fopen(file_directory, "r")) == NULL)
   {
     printf("[ERR] reading the file failed\n");  //check if the file can be read
     return FILE_READ_ERROR;
   }
-  else
+
+  int character; // has to be a integer to read EOF as -1
+  int bracket_counter = 0;
+  size_t program_size = 1024;
+  int position = 0;
+  arguments->program_ = saveMalloc(program_size);
+
+  //read the file char by char and write it into an array
+  while ((character = fgetc(file)) != EOF)
   {
-    //read the file char by char and write it into an array
-    while ((character = fgetc(file)) != EOF)
-    {
-      //is 0 if #opened brackets == #closed brackets
-      bracket_counter += check_code(arguments, character, &position, bonus);
+    //is 0 if #opened brackets == #closed brackets
+    bracket_counter += check_code(arguments, character, &position, bonus);
 
-      //resizes the programmArray if the file is too long
-      if (position == program_size - 1)
-      {
-        program_size *= 2;
-        arguments->program_ = saveRealloc(arguments->program_, program_size);
-      }
-    }
-    arguments->program_[position] = '\0';  //end of string
-    arguments->program_length_ = program_size * sizeof(char);
-    //set program_counter_ to the beginning of the code
-    arguments->program_counter_ = arguments->program_;
-
-    if (bracket_counter != 0)
+    //resizes the programmArray if the file is too long
+    if (position == program_size - 1)
     {
-      printf("[ERR] parsing of input failed\n");
-      return FILE_PARSE_ERROR;
+      program_size *= 2;
+      arguments->program_ = saveRealloc(arguments->program_, program_size);
     }
+  }
+  arguments->program_[position] = '\0';  //end of string
+  arguments->program_length_ = program_size * sizeof(char);
+  //set program_counter_ to the beginning of the code
+  arguments->program_counter_ = arguments->program_;
+
+  if (bracket_counter != 0)
+  {
+    printf("[ERR] parsing of input failed\n");
+    return FILE_PARSE_ERROR;
   }
 
   fclose(file);
 
   return LOADED_FROM_FILE;
-}
-
-/**********************
-RUN() WILL BE DELETED
-**********************/
-int run(InterpreterArguments *interpreter_arguments)
-{
-
-  return interpreter(interpreter_arguments);
 }
 
 void eval(InterpreterArguments *arguments, char *input_bfstring, int bonus)
