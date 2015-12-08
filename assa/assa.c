@@ -64,9 +64,20 @@ typedef struct {
   int *size_of_jump_points_;
 } InterpreterArguments;
 
+typedef struct {
+  int e_;
+  char *path;
+  int b_;
+} CommandLineArguments;
 
+
+void parseCommandLineArguments(CommandLineArguments *command_line_arguments,
+                               int argc, char *argv[]);
 
 void exitWrongUsage();
+
+int runOnce(InterpreterArguments *arguments,
+             CommandLineArguments *command_line_arguments);
 
 void breakProgram(int program_loaded, InterpreterArguments *arguments,
                   size_t *breakpoint_size);
@@ -214,68 +225,24 @@ int main(int argc, char *argv[])
   InterpreterArguments arguments =
     getUsableInterpreterArgumentsStruct(NULL, NULL, NULL);
 
+
+
+  CommandLineArguments command_line_arguments = {0, NULL, 0};
+  int eof = 0;
+
+  parseCommandLineArguments(&command_line_arguments, argc, argv);
+
+  if(command_line_arguments.e_ == 1)
+  {
+    return runOnce(&arguments, &command_line_arguments);
+  }
+
+
   int program_loaded = NOT_LOADED;
   size_t breakpoint_size = 10;
   // allocate char array for console input
   size_t line_size = 100;
   char *line = calloc(line_size, sizeof(char));
-
-  int command_line_argument_b = 0;
-  int command_line_argument_e = 0;
-  char *command_line_argument_path = NULL;
-  int eof = 0;
-
-  if (argc >= 2)
-  {
-    int argument;
-    for (argument = 1; argument < argc; argument++)
-    {
-      if (strcmp(argv[argument], "-b") == 0)
-      {
-        command_line_argument_b = 1;
-      }
-      else if (strcmp(argv[argument], "-e") == 0)
-      {
-        if(argc >= argument + 2)
-        {
-          command_line_argument_e = 1;
-          argument++;
-          command_line_argument_path = argv[argument];
-        }
-        else
-        {
-          exitWrongUsage();
-        }
-      }
-      else
-      {
-        exitWrongUsage();
-      }
-    }
-  }
-
-  if(command_line_argument_e == 1)
-  {
-    int return_code = load(command_line_argument_path, &arguments,
-                           command_line_argument_b);
-
-    if(return_code == FILE_READ_ERROR)
-    {
-      return FILE_READ_ERROR_RETURN_CODE;
-    }
-    if(return_code == FILE_PARSE_ERROR)
-    {
-      return FILE_PARS_ERROR_RETURN_CODE;
-    }
-
-    run(&arguments);
-
-    freePointer((void**) &line);
-    freeInterpreterArguments(&arguments);
-
-    return EXIT_SUCCESS;
-  }
-
 
 
   InterpreterArguments evalArguments = getUsableInterpreterArgumentsStruct(
@@ -299,7 +266,7 @@ int main(int argc, char *argv[])
         cmd = strtok(NULL, " ");
         if(cmd != NULL)
         {
-          int return_code = load(cmd, &arguments, command_line_argument_b);
+          int return_code = load(cmd, &arguments, command_line_arguments.b_);
           if(return_code == SUCCESS)
           {
             program_loaded = LOADED_FROM_FILE;
@@ -353,7 +320,7 @@ int main(int argc, char *argv[])
       else if (strcmp(cmd, "eval") == 0)
       {
         char *bfstring = strtok(NULL, " ");
-        eval(&evalArguments, bfstring, command_line_argument_b);
+        eval(&evalArguments, bfstring, command_line_arguments.b_);
 
         //only set the program_loaded variable if no program was loaded yet
         if(program_loaded == NOT_LOADED)
@@ -365,7 +332,7 @@ int main(int argc, char *argv[])
       }
       else if (strcmp(cmd, "step") == 0)
       {
-        step(program_loaded, &arguments, command_line_argument_b);
+        step(program_loaded, &arguments, command_line_arguments.b_);
       }
       else if (strcmp(cmd, "memory") == 0)
       {
@@ -413,6 +380,63 @@ void exitWrongUsage()
   printf("[ERR] usage: ./assa [-e brainfuck_filnename]\n");
   exit(WRONG_USAGE_RETURN_CODE);
 }
+
+void parseCommandLineArguments(CommandLineArguments *command_line_arguments,
+                               int argc, char *argv[])
+{
+  if (argc >= 2)
+  {
+    int argument;
+    for (argument = 1; argument < argc; argument++)
+    {
+      if (strcmp(argv[argument], "-b") == 0)
+      {
+        command_line_arguments->b_ = 1;
+      }
+      else if (strcmp(argv[argument], "-e") == 0)
+      {
+        if(argc >= argument + 2)
+        {
+          command_line_arguments->e_ = 1;
+          argument++;
+          command_line_arguments->path = argv[argument];
+        }
+        else
+        {
+          exitWrongUsage();
+        }
+      }
+      else
+      {
+        exitWrongUsage();
+      }
+    }
+  }
+}
+
+
+int runOnce(InterpreterArguments *arguments,
+             CommandLineArguments *command_line_arguments)
+{
+  int return_code = load(command_line_arguments->path, arguments,
+                         command_line_arguments->b_);
+
+  if(return_code == FILE_READ_ERROR)
+  {
+    return FILE_READ_ERROR_RETURN_CODE;
+  }
+  if(return_code == FILE_PARSE_ERROR)
+  {
+    return FILE_PARS_ERROR_RETURN_CODE;
+  }
+
+  run(arguments);
+
+  freeInterpreterArguments(arguments);
+
+  return EXIT_SUCCESS;
+}
+
 
 void breakProgram(int program_loaded, InterpreterArguments *arguments,
                   size_t *breakpoint_size)
