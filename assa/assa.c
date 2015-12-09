@@ -472,7 +472,7 @@ int main(int argc, char *argv[])
           {
             arguments.loaded_language = 0;
           }
-          int return_code;
+          int return_code = 0;
           if(arguments.loaded_language == 0)
           {
             return_code = load(cmd, &arguments, command_line_arguments.b_);
@@ -503,7 +503,7 @@ int main(int argc, char *argv[])
         }
         else
         {
-          int stop_reason;
+          int stop_reason = -1;
           if(arguments.loaded_language == 0)
           {
             stop_reason = interpreter(&arguments);
@@ -1297,7 +1297,7 @@ int interpreter(InterpreterArguments *interpreter_arguments)
     }
 
 
-      // ------------  .  ------------
+      // ------------  ,  ------------
     else if (*(interpreter_arguments->program_counter_) == ',')
     {
       **interpreter_arguments->data_pointer_ = (unsigned char) getchar();
