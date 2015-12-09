@@ -74,7 +74,7 @@ typedef struct
   size_t *data_length_;          //length of the data segment
   char *program_counter_;        //pointer pointing to the current command
   unsigned char **data_pointer_; //pointer pointing to the current data byte
-  unsigned long long steps_;     //the maximal steps to run, 0 if infinity
+  long long steps_;     //the maximal steps to run, 0 if infinity
   int *breakpoints_;             //array with the breakpoints
   size_t breakpoint_count_;      //size of the breakpoint array
   unsigned long long step_counter_;    //counts the steps the program makes altogether
@@ -963,7 +963,7 @@ void step(int program_loaded, InterpreterArguments *arguments, int bonus)
     return;
   }
   char *steps = strtok(NULL, " ");
-  arguments->steps_ = (int) strtol(steps, (char **) NULL, 10);
+  arguments->steps_ = strtol(steps, (char **) NULL, 10);
 
   if (arguments->steps_ == 0 || (arguments->steps_ < 0 && bonus == 0))
   {
@@ -1497,9 +1497,9 @@ void processLoop(InterpreterArguments *interpreter_arguments, int direction)
       )
       )
     {
-      int distance = jumpToMatchingBrace(interpreter_arguments);
-      insertJump(&interpreter_arguments->jumps_,
-                 (Jump) {interpreter_arguments->step_counter_, distance});
+      /*int distance =*/ jumpToMatchingBrace(interpreter_arguments);
+      //insertJump(&interpreter_arguments->jumps_,
+      //           (Jump) {interpreter_arguments->step_counter_, distance});
     }
     else
     {
