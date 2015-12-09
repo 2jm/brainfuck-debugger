@@ -944,6 +944,7 @@ void setBreakpoint(int program_loaded, InterpreterArguments *arguments,
   arguments->breakpoints_[arguments->breakpoint_count_] = number;
   arguments->breakpoint_count_++;
 
+  // TODO We don't have to sort the breakpoints because the interpreter has to check all, because the program can jump over a breakpoint
   // sort breakpoints ascending (eg. 3 - 7 - 10)
   qsort(arguments->breakpoints_, arguments->breakpoint_count_, sizeof(int),
         compareFunction);
