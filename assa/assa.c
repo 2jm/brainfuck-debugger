@@ -45,8 +45,8 @@
 //
 typedef struct
 {
-  int step_;                     //defines at what step the program was jumping
-  int distance_;                 //the jumps distance, positive or negative
+  unsigned long long step_;      //defines at what step the program was jumping
+  unsigned long long distance_;  //the jumps distance, positive or negative
 } Jump;
 
 
@@ -74,10 +74,10 @@ typedef struct
   size_t *data_length_;          //length of the data segment
   char *program_counter_;        //pointer pointing to the current command
   unsigned char **data_pointer_; //pointer pointing to the current data byte
-  int steps_;                    //the maximal steps to run, 0 if infinity
+  unsigned long long steps_;     //the maximal steps to run, 0 if infinity
   int *breakpoints_;             //array with the breakpoints
   size_t breakpoint_count_;      //size of the breakpoint array
-  unsigned int step_counter_;    //counts the steps the program makes altogether
+  unsigned long long step_counter_;    //counts the steps the program makes altogether
   Jumps jumps_;                  //instance if the Jumps struct
   char **jump_points_;
   int *size_of_jump_points_;
@@ -1219,7 +1219,7 @@ int interpreter(InterpreterArguments *interpreter_arguments)
 
   //create a local variable for steps because it should not be changed
   //if -1 runs infinitely long (to the end of the program)
-  int steps = (interpreter_arguments->steps_ == 0) ?
+  long long steps = (interpreter_arguments->steps_ == 0) ?
               -1 : interpreter_arguments->steps_;
 
   //the program must run shifted one to the left, increment at the end
@@ -1341,6 +1341,9 @@ int interpreter(InterpreterArguments *interpreter_arguments)
     }
 
     interpreter_arguments->step_counter_ += direction;
+
+    //if((interpreter_arguments->step_counter_ % 10000000) == 0)
+    //  printf("%llu\n", interpreter_arguments->step_counter_);
 
     //printf(" step: %d\n", interpreter_arguments->step_counter_-1);
   }
