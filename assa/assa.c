@@ -51,7 +51,6 @@ typedef struct
   unsigned long long distance_;  //the jumps distance, positive or negative
 } Jump;
 
-
 //------------------------------------------------------------------------------
 ///
 /// This struct holds all the jumps in an array
@@ -74,6 +73,30 @@ typedef struct {
 
 //------------------------------------------------------------------------------
 ///
+/// This struct holds all values overwritten by a user input
+//
+typedef struct
+{
+  unsigned long long step_;
+  unsigned char value_;
+} OverwrittenDataByte;
+
+
+//-----------------------------------------------------------------------------
+///
+/// This struct holds all the overwritten values in an array
+//
+typedef struct
+{
+  unsigned int count_;           //count of the jumps
+  size_t allocated_memory_;      //size of the Jump array
+  OverwrittenDataByte *array_;   //array where the jumps are stored
+} OverwrittenDataBytes;
+
+
+
+//------------------------------------------------------------------------------
+///
 /// This struct holds all the variables the interpreter needs to run
 //
 typedef struct
@@ -89,7 +112,8 @@ typedef struct
   size_t breakpoint_count_;      //size of the breakpoint array
   unsigned long long step_counter_;   //counts the steps the program makes
   int activate_reverse_step_;
-  Jumps jumps_;
+  Jumps jumps_;                  //instance of the Jumps struct
+  OverwrittenDataBytes overwrittenDataBytes_;
   JumpPoint *jump_points_;
   size_t jump_point_size_;
   int loaded_language;           //language loaded in program (bf or BIO)
@@ -141,12 +165,6 @@ void parseCommandLineArguments(CommandLineArguments *command_line_arguments,
 //
 void exitWrongUsage();
 
-
-//------------------------------------------------------------------------------
-///
-/// Like getchar, but flushing the input buffer
-//
-int getcharFlush();
 
 
 //------------------------------------------------------------------------------
@@ -370,6 +388,10 @@ void expandDataSegment(unsigned char **data_segment, size_t *data_length,
                        unsigned char **data_pointer);
 
 
+void processUserInput(InterpreterArguments *interpreter_arguments,
+                        int direction);
+
+
 //------------------------------------------------------------------------------
 ///
 /// Processes a brainfuck loop
@@ -402,6 +424,16 @@ unsigned long long jumpToMatchingBrace(InterpreterArguments
 /// @param jump the jump to insert
 //
 void insertJump(Jumps *jumps, Jump jump);
+
+//------------------------------------------------------------------------------
+///
+/// This function inserts a input in the input array and expands it if necessary
+///
+/// @param inputs pointer to the OverwrittenDataBytes struct
+/// @param input the input to insert
+//
+void insertOverwrittenDataByte(OverwrittenDataBytes *inputs,
+                               OverwrittenDataByte input);
 
 //------------------------------------------------------------------------------
 ///
@@ -927,20 +959,6 @@ void parseCommandLineArguments(CommandLineArguments *command_line_arguments,
 }
 
 
-int getcharFlush()
-{
-  int character, tempFlushCharacter;
-  character = getchar();
-
-  //flush the stdin
-  while ( character != '\n' && character != EOF &&
-    (tempFlushCharacter = getchar()) != '\n' &&
-    tempFlushCharacter != EOF ) { }
-
-  return character;
-}
-
-
 int runOnce(InterpreterArguments *arguments,
             CommandLineArguments *command_line_arguments)
 {
@@ -1376,9 +1394,7 @@ int interpreter(InterpreterArguments *interpreter_arguments)
       // ------------  ,  ------------
     else if (*(interpreter_arguments->program_counter_) == ',')
     {
-      **interpreter_arguments->data_pointer_ = (unsigned char) getchar();
-
-      interpreter_arguments->program_counter_ += direction;
+      processUserInput(interpreter_arguments, direction);
     }
 
 
@@ -1479,6 +1495,11 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
       0,            // allocated_memory_
       NULL          // array_
     },
+    {             // inputs
+      0,            // count_
+      0,            // allocated_memory_
+      NULL          // array_
+    },
     NULL,         // jump_points_
     1         // size_of_jump_points_
   };
@@ -1501,6 +1522,10 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
   interpreter_arguments.jumps_.array_ = (Jump *) saveMalloc(
     interpreter_arguments.jumps_.allocated_memory_ * sizeof(Jump));
 
+  interpreter_arguments.overwrittenDataBytes_.allocated_memory_ = 20;
+  interpreter_arguments.overwrittenDataBytes_.array_ = (OverwrittenDataByte *) saveMalloc(
+    interpreter_arguments.overwrittenDataBytes_.allocated_memory_ * sizeof(OverwrittenDataByte));
+
   //*interpreter_arguments.jump_points_ = saveMalloc(1);
 
   return interpreter_arguments;
@@ -1514,6 +1539,7 @@ void freeInterpreterArguments(InterpreterArguments *interpreterArguments)
   freePointer((void **) &(interpreterArguments->data_pointer_));
   freePointer((void **) &(interpreterArguments->breakpoints_));
   freePointer((void **) &(interpreterArguments->jumps_.array_));
+  freePointer((void **) &(interpreterArguments->overwrittenDataBytes_.array_));
 }
 
 void freePointer(void **pointer)
@@ -1574,6 +1600,48 @@ void expandDataSegment(unsigned char **data_segment, size_t *data_length,
   printf("Expand %lu\n", *data_length);
 }
 
+void processUserInput(InterpreterArguments *interpreter_arguments,
+                      int direction)
+{
+  if (direction == 1)
+  {
+    insertOverwrittenDataByte(&(interpreter_arguments->overwrittenDataBytes_),
+                              (OverwrittenDataByte) {
+                                interpreter_arguments->step_counter_,
+                                **interpreter_arguments->data_pointer_
+                              });
+
+    **interpreter_arguments->data_pointer_ = (unsigned char) getchar();
+
+    interpreter_arguments->program_counter_++;
+  }
+  else if (direction == -1)
+  {
+    //search in the jumps array if the program was jumping
+    int search_loop_index;
+
+    //search from back because, the chance that the overwrittenDataByte is at
+    // the end is high
+    for (search_loop_index =
+           interpreter_arguments->overwrittenDataBytes_.count_-1;
+         search_loop_index >= 0; search_loop_index--)
+    {
+      //if this is the correct value
+      if (interpreter_arguments->overwrittenDataBytes_.
+        array_[search_loop_index].step_ ==
+        interpreter_arguments->step_counter_ - 1)
+      {
+        //set it
+        **interpreter_arguments->data_pointer_ =
+          interpreter_arguments->overwrittenDataBytes_.
+            array_[search_loop_index].value_;
+      }
+    }
+
+    interpreter_arguments->program_counter_--;
+  }
+}
+
 void processLoop(InterpreterArguments *interpreter_arguments, int direction)
 {
   if (direction == 1)
@@ -1611,7 +1679,7 @@ void processLoop(InterpreterArguments *interpreter_arguments, int direction)
 
     //search from back because, the chance that the jump is at the end is high
     for (search_loop_index = interpreter_arguments->jumps_.count_;
-         search_loop_index > 0; search_loop_index++)
+         search_loop_index > 0; search_loop_index--)
     {
       //if the program was jumping
       if (interpreter_arguments->jumps_.array_[search_loop_index].step_ ==
@@ -1676,6 +1744,26 @@ void insertJump(Jumps *jumps, Jump jump)
     jumps->allocated_memory_ *= 2;
     jumps->array_ = saveRealloc(jumps->array_,
                                 jumps->allocated_memory_ * sizeof(Jump));
+  }
+}
+
+
+void insertOverwrittenDataByte(OverwrittenDataBytes *overwrittenDataBytes,
+                               OverwrittenDataByte overwrittenDataByte)
+{
+  overwrittenDataBytes->array_[overwrittenDataBytes->count_] =
+                                                          overwrittenDataByte;
+
+  overwrittenDataBytes->count_++;
+
+  if (overwrittenDataBytes->count_ == overwrittenDataBytes->allocated_memory_)
+  {
+    //extend array
+    overwrittenDataBytes->allocated_memory_ *= 2;
+    overwrittenDataBytes->array_ =
+      saveRealloc(overwrittenDataBytes->array_,
+                  overwrittenDataBytes->allocated_memory_ *
+                    sizeof(OverwrittenDataByte));
   }
 }
 
