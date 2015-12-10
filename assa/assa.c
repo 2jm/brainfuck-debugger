@@ -13,6 +13,8 @@
 //------------------------------------------------------------------------------
 //
 
+// TODO fibonacci.bf crashes
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -128,6 +130,13 @@ void parseCommandLineArguments(CommandLineArguments *command_line_arguments,
 /// with the corresponding error code
 //
 void exitWrongUsage();
+
+
+//------------------------------------------------------------------------------
+///
+/// Like getchar, but flushing the input buffer
+//
+int getcharFlush();
 
 
 //------------------------------------------------------------------------------
@@ -869,6 +878,20 @@ void parseCommandLineArguments(CommandLineArguments *command_line_arguments,
 }
 
 
+int getcharFlush()
+{
+  int character, tempFlushCharacter;
+  character = getchar();
+
+  //flush the stdin
+  while ( character != '\n' && character != EOF &&
+    (tempFlushCharacter = getchar()) != '\n' &&
+    tempFlushCharacter != EOF ) { }
+
+  return character;
+}
+
+
 int runOnce(InterpreterArguments *arguments,
             CommandLineArguments *command_line_arguments)
 {
@@ -1231,8 +1254,9 @@ int interpreter(InterpreterArguments *interpreter_arguments)
          steps -= direction)
   {
     //check if a breakpoint is reached
-    int *breakpoint = interpreter_arguments->breakpoints_;
-    for (; breakpoint < interpreter_arguments->breakpoints_ +
+    int *breakpoint;
+    for (breakpoint = interpreter_arguments->breakpoints_;
+         breakpoint < interpreter_arguments->breakpoints_ +
                         interpreter_arguments->breakpoint_count_; breakpoint++)
     {
       if (interpreter_arguments->program_ + *breakpoint ==
@@ -1301,7 +1325,7 @@ int interpreter(InterpreterArguments *interpreter_arguments)
       // ------------  ,  ------------
     else if (*(interpreter_arguments->program_counter_) == ',')
     {
-      **interpreter_arguments->data_pointer_ = (unsigned char) getchar();
+      **interpreter_arguments->data_pointer_ = (unsigned char) getcharFlush();
 
       interpreter_arguments->program_counter_ += direction;
     }
