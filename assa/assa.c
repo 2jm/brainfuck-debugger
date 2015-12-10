@@ -1032,7 +1032,6 @@ void setBreakpoint(int program_loaded, InterpreterArguments *arguments,
   arguments->breakpoints_[arguments->breakpoint_count_] = number;
   arguments->breakpoint_count_++;
 
-  // TODO We don't have to sort the breakpoints because the interpreter has to check all, because the program can jump over a breakpoint
   // sort breakpoints ascending (eg. 3 - 7 - 10)
   qsort(arguments->breakpoints_, arguments->breakpoint_count_, sizeof(int),
         compareFunction);
@@ -1419,7 +1418,7 @@ int interpreter(InterpreterArguments *interpreter_arguments)
         if (checkForExistingJumpPoint(interpreter_arguments) != -1)
           jump_point_nr = checkForExistingJumpPoint(interpreter_arguments);
         else
-          jump_point_nr = interpreter_arguments->jump_point_size_;
+          jump_point_nr = (int) interpreter_arguments->jump_point_size_;
       }
       newJumpPoint(interpreter_arguments, jump_point_nr);
 
@@ -1538,6 +1537,7 @@ void freeInterpreterArguments(InterpreterArguments *interpreterArguments)
   freePointer((void **) &(interpreterArguments->breakpoints_));
   freePointer((void **) &(interpreterArguments->jumps_.array_));
   freePointer((void **) &(interpreterArguments->overwrittenDataBytes_.array_));
+  freePointer((void **) &(interpreterArguments->jump_points_));
 }
 
 void freePointer(void **pointer)
