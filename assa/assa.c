@@ -76,10 +76,11 @@ typedef struct
   size_t *data_length_;          //length of the data segment
   char *program_counter_;        //pointer pointing to the current command
   unsigned char **data_pointer_; //pointer pointing to the current data byte
-  long long steps_;     //the maximal steps to run, 0 if infinity
+  long long steps_;              //the maximal steps to run, 0 if infinity
   int *breakpoints_;             //array with the breakpoints
   size_t breakpoint_count_;      //size of the breakpoint array
-  unsigned long long step_counter_;    //counts the steps the program makes altogether
+  unsigned long long step_counter_;   //counts the steps the program makes
+  int activate_reverse_step_;
   Jumps jumps_;                  //instance if the Jumps struct
   char **jump_points_;
   int *size_of_jump_points_;
@@ -93,9 +94,10 @@ typedef struct
 //
 typedef struct
 {
-  int e_;                        //-e argument
+  int e_;                        //-e argument (execute)
   char *path;                    //path behind the -e argument
-  int b_;                        //-b argument
+  int b_;                        //-b argument (bonus)
+  int r_;                        //-r argument (reverse step)
 } CommandLineArguments;
 
 
@@ -352,7 +354,8 @@ void *saveRealloc(void *pointer, size_t size);
 /// @param data_segment double pointer to the data segment
 /// @param data_length current size of the data segment
 //
-void expandDataSegment(unsigned char **data_segment, size_t *data_length);
+void expandDataSegment(unsigned char **data_segment, size_t *data_length,
+                       unsigned char **data_pointer);
 
 
 //------------------------------------------------------------------------------
@@ -375,7 +378,8 @@ void processLoop(InterpreterArguments *interpreter_arguments, int direction);
 ///
 /// @param interpreter_arguments all the interpreter arguments
 //
-int jumpToMatchingBrace(InterpreterArguments *interpreter_arguments);
+unsigned long long jumpToMatchingBrace(InterpreterArguments
+                                        *interpreter_arguments);
 
 
 //------------------------------------------------------------------------------
@@ -410,6 +414,11 @@ void push(Loop **top, char *data_ptr, int *cell);
 char *pop(Loop **top);
 
 
+
+
+
+
+
 //------------------------------------------------------------------------------
 ///
 /// The main program.
@@ -434,6 +443,11 @@ int main(int argc, char *argv[])
   if (command_line_arguments.e_ == 1)
   {
     return runOnce(&arguments, &command_line_arguments);
+  }
+
+  if (command_line_arguments.r_ == 1)
+  {
+    arguments.activate_reverse_step_ = 1;
   }
 
   int program_loaded = NOT_LOADED;
@@ -869,11 +883,20 @@ void parseCommandLineArguments(CommandLineArguments *command_line_arguments,
           exitWrongUsage();
         }
       }
+      else if (strcmp(argv[argument], "-r") == 0)
+      {
+        command_line_arguments->r_ = 1;
+      }
       else
       {
         exitWrongUsage();
       }
     }
+  }
+
+  if(command_line_arguments->r_ == 1 && command_line_arguments->b_ == 0)
+  {
+    command_line_arguments->r_ = 0;
   }
 }
 
@@ -1273,10 +1296,11 @@ int interpreter(InterpreterArguments *interpreter_arguments)
     {
       if (++(*interpreter_arguments->data_pointer_) >
           *interpreter_arguments->data_segment_ +
-          *(interpreter_arguments->data_length_))
+          *(interpreter_arguments->data_length_) - 1)
       {
         expandDataSegment(interpreter_arguments->data_segment_,
-                          interpreter_arguments->data_length_);
+                          interpreter_arguments->data_length_,
+                          interpreter_arguments->data_pointer_);
       }
       interpreter_arguments->program_counter_ += direction;
     }
@@ -1325,7 +1349,7 @@ int interpreter(InterpreterArguments *interpreter_arguments)
       // ------------  ,  ------------
     else if (*(interpreter_arguments->program_counter_) == ',')
     {
-      **interpreter_arguments->data_pointer_ = (unsigned char) getcharFlush();
+      **interpreter_arguments->data_pointer_ = (unsigned char) getchar();
 
       interpreter_arguments->program_counter_ += direction;
     }
@@ -1366,11 +1390,6 @@ int interpreter(InterpreterArguments *interpreter_arguments)
     }
 
     interpreter_arguments->step_counter_ += direction;
-
-    //if((interpreter_arguments->step_counter_ % 10000000) == 0)
-    //  printf("%llu\n", interpreter_arguments->step_counter_);
-
-    //printf(" step: %d\n", interpreter_arguments->step_counter_-1);
   }
 
   if (direction == -1)
@@ -1407,21 +1426,27 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
   unsigned char **data_pointer)
 {
   InterpreterArguments interpreter_arguments = {
-    NULL,
-    0,
-    data_segment,
-    data_length,
-    NULL,
-    data_pointer,
-    0,
-    NULL,
-    0,
-    0,
-    {0, 0, NULL},
-    NULL,
-    NULL,
-    -1
+    NULL,         // program_
+    0,            // program_length_
+    data_segment, // data_segment_
+    data_length,  // data_length_
+    NULL,         // program_counter_
+    data_pointer, // data_pointer_
+    0,            // steps_
+    NULL,         // breakpoints_
+    0,            // breakpoint_count_
+    0,            // step_counter_
+    0,            // activate_reverse_step_
+    {             // jumps_
+      0,            // count_
+      0,            // allocated_memory_
+      NULL          // array_
+    },
+    NULL,         // jump_points_
+    NULL,         // size_of_jump_points_
+    -1            // loaded_language
   };
+
 
   if (data_segment == NULL)
   {
@@ -1497,13 +1522,20 @@ void *saveRealloc(void *pointer, size_t size)
   return pointer;
 }
 
-void expandDataSegment(unsigned char **data_segment, size_t *data_length)
+void expandDataSegment(unsigned char **data_segment, size_t *data_length,
+                       unsigned char **data_pointer)
 {
+  unsigned long data_pointer_offset = *data_pointer - *data_segment;
+
   *data_length *= 2;
   *data_segment = saveRealloc(*data_segment, *data_length);
 
+  *data_pointer = *data_segment + data_pointer_offset;
+
   //set the new memory to 0
   memset(*data_segment + (*data_length) / 2, 0, (*data_length) / 2);
+
+  printf("Expand %lu\n", *data_length);
 }
 
 void processLoop(InterpreterArguments *interpreter_arguments, int direction)
@@ -1522,9 +1554,13 @@ void processLoop(InterpreterArguments *interpreter_arguments, int direction)
       )
       )
     {
-      /*int distance =*/ jumpToMatchingBrace(interpreter_arguments);
-      //insertJump(&interpreter_arguments->jumps_,
-      //           (Jump) {interpreter_arguments->step_counter_, distance});
+      unsigned long long distance = jumpToMatchingBrace(interpreter_arguments);
+
+      if(interpreter_arguments->activate_reverse_step_ == 1)
+      {
+        insertJump(&interpreter_arguments->jumps_,
+                   (Jump) {interpreter_arguments->step_counter_, distance});
+      }
     }
     else
     {
@@ -1558,10 +1594,11 @@ void processLoop(InterpreterArguments *interpreter_arguments, int direction)
   }
 }
 
-int jumpToMatchingBrace(InterpreterArguments *interpreter_arguments)
+unsigned long long jumpToMatchingBrace(InterpreterArguments
+                                        *interpreter_arguments)
 {
   int loop_counter = 1;
-  int distance = 0;
+  unsigned long long distance = 0;
   int direction = (*(interpreter_arguments->program_counter_) == '[') ? 1 : -1;
 
   distance += direction;
