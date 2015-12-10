@@ -38,6 +38,11 @@ typedef struct {
 } Jumps;
 
 typedef struct {
+  char *address_;
+  int id_;
+} JumpPoint;
+
+typedef struct {
   char *program_; //array where the program is stored
   size_t program_length_; //size of the whole program array
   unsigned char **data_segment_; //pointer to the data segment
@@ -49,8 +54,8 @@ typedef struct {
   size_t breakpoint_count_; //size of the breakpoint array
   unsigned int step_counter_; //counts the steps the program makes altogether
   Jumps jumps_;
-  char** jump_points_;
-  int *size_of_jump_points_;
+  JumpPoint *jump_points_;
+  size_t jump_point_size_;
 } InterpreterArguments;
 
 
@@ -178,7 +183,8 @@ int jumpToMatchingBrace(InterpreterArguments *interpreter_arguments);
 
 void insertJump(Jumps *jumps, Jump jump);
 
-void newJumpPoint(InterpreterArguments *interpreter_arguments);
+void newJumpPoint(InterpreterArguments *interpreter_arguments, int jump_point);
+int checkForExistingJumpPoint(InterpreterArguments *arguments);
 
 
 //------------------------------------------------------------------------------
@@ -697,6 +703,7 @@ int interpreter (InterpreterArguments *interpreter_arguments)
   const char jump         = (char)'%';
 
   int break_loop = 0;
+  int jump_point_nr = 0;
 
   //create a local variable for steps because it should not be changed
   //if -1 runs infinitely long (to the end of the program)
@@ -800,18 +807,35 @@ int interpreter (InterpreterArguments *interpreter_arguments)
       // ------------  &  ------------
     else if (*(interpreter_arguments->program_counter_) == jump_point)
     {
-      newJumpPoint(interpreter_arguments);
+
+      if(interpreter_arguments->jump_points_ != NULL)
+      {
+        if(checkForExistingJumpPoint(interpreter_arguments) != -1)
+          jump_point_nr = checkForExistingJumpPoint(interpreter_arguments);
+        else
+          jump_point_nr = interpreter_arguments->jump_point_size_;
+      }
+      printf("jumppointnr: %d", jump_point_nr);
+      newJumpPoint(interpreter_arguments, jump_point_nr);
       //**interpreter_arguments->data_pointer_ = 0;
 
       interpreter_arguments->program_counter_ += direction;
+
+      printf("\n gesetzt: %d \n",interpreter_arguments->jump_points_[0].id_);
     }
 
 
       // ------------  %  ------------
     else if (*(interpreter_arguments->program_counter_) == jump)
-    {
-      interpreter_arguments->program_counter_ =
-        interpreter_arguments->jump_points_[**interpreter_arguments->data_pointer_];
+    { 
+      printf("de ID: %d", **(interpreter_arguments->data_pointer_));
+      printf("Rückgabewert: %d", checkForExistingJumpPoint(interpreter_arguments));
+      if(checkForExistingJumpPoint(interpreter_arguments) != -1)
+      { 
+        printf("er sucht eh");
+        jump_point_nr = checkForExistingJumpPoint(interpreter_arguments);
+        interpreter_arguments->program_counter_=interpreter_arguments->jump_points_[jump_point_nr].address_;
+      }
 
       interpreter_arguments->program_counter_ += direction;
     }
@@ -867,7 +891,7 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
     0,
     {0, 0, NULL},
     NULL,
-    NULL
+    1
   };
 
   if(data_segment == NULL)
@@ -887,7 +911,6 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
   interpreter_arguments.jumps_.array_ = (Jump*) malloc(
     interpreter_arguments.jumps_.allocated_memory_ * sizeof(Jump));
 
-  //*interpreter_arguments.jump_points_ = malloc(1);
 
   return interpreter_arguments;
 }
@@ -1032,21 +1055,37 @@ void insertJump(Jumps *jumps, Jump jump)
   }
 }
 
-void newJumpPoint(InterpreterArguments *interpreter_arguments)
+void newJumpPoint(InterpreterArguments *arguments, int jump_point)
 {
-  if (**interpreter_arguments->data_pointer_ >
-      *interpreter_arguments->size_of_jump_points_)
+  if (arguments->jump_points_ == NULL)
   {
-    interpreter_arguments->jump_points_ =
-      realloc(interpreter_arguments->jump_points_ , sizeof(char) *
-                                                    **interpreter_arguments->data_pointer_);
-
-    *interpreter_arguments->size_of_jump_points_ =
-      **interpreter_arguments->data_pointer_;
+    arguments->jump_points_ = malloc(sizeof(JumpPoint));
+  }
+  // extend jumppoint memory if needed
+  if (jump_point + 1 > arguments->jump_point_size_)
+  {
+    arguments->jump_point_size_++;
+    arguments->jump_points_ = realloc(arguments->jump_points_,
+                                      arguments->jump_point_size_ * sizeof(JumpPoint));
   }
 
-  interpreter_arguments->jump_points_[**interpreter_arguments->data_pointer_] =
-    interpreter_arguments->program_counter_;
+  // add next jumppoint
+  arguments->jump_points_[jump_point].address_ = arguments->program_counter_;
 
+  arguments->jump_points_[jump_point].id_ = **(arguments->data_pointer_);
+
+}
+
+int checkForExistingJumpPoint(InterpreterArguments *arguments)
+{
+  int count_var = 0;
+  for (count_var = 0; count_var<=arguments->jump_point_size_; count_var++)
+  {
+    printf("\nin function: %i\n", arguments->jump_points_[count_var].id_ );
+    if (arguments->jump_points_[count_var].id_ ==
+        **(arguments->data_pointer_))
+      return count_var;
+  }
+  return -1;
 
 }
