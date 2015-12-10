@@ -7,7 +7,4 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 
 set(SOURCE_FILES assa/assa.c)
 
-# bonus only
-#set(SOURCE_FILES assa/bio.c)
-
 add_executable(assa ${SOURCE_FILES})
