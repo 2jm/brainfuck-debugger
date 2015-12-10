@@ -13,8 +13,6 @@
 //------------------------------------------------------------------------------
 //
 
-// TODO fibonacci.bf crashes
-
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -1605,11 +1603,14 @@ void processUserInput(InterpreterArguments *interpreter_arguments,
 {
   if (direction == 1)
   {
-    insertOverwrittenDataByte(&(interpreter_arguments->overwrittenDataBytes_),
-                              (OverwrittenDataByte) {
-                                interpreter_arguments->step_counter_,
-                                **interpreter_arguments->data_pointer_
-                              });
+    if(interpreter_arguments->activate_reverse_step_ == 1)
+    {
+      insertOverwrittenDataByte(&(interpreter_arguments->overwrittenDataBytes_),
+                                (OverwrittenDataByte) {
+                                  interpreter_arguments->step_counter_,
+                                  **interpreter_arguments->data_pointer_
+                                });
+    }
 
     **interpreter_arguments->data_pointer_ = (unsigned char) getchar();
 
