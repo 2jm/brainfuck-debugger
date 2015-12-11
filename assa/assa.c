@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <time.h>
+//#include <time.h>
 
 
 #define NOT_LOADED       0
@@ -415,13 +415,29 @@ void *saveRealloc(void *pointer, size_t size);
 void expandDataSegment(unsigned char **data_segment, size_t *data_length,
                        unsigned char **data_pointer);
 
-// TODO
+
+//------------------------------------------------------------------------------
+///
+/// Processes the user input ',' brainfuck command.
+/// If the direction is positive it reads a character from the user.
+/// If the direction is negative (reverse step) it searches the
+/// overwritten_data_bytes array and inserts this byte in the data segment
+///
+/// @param interpreter_arguments Pointer to the interpreter arguments
+/// @param direction Direction the program is running
+//
 void processUserInput(InterpreterArguments *interpreter_arguments,
                         int direction);
 
 
-// TODO
+//------------------------------------------------------------------------------
+///
+/// Allocates and fills the jump cache
+///
+/// @param interpreter_arguments Pointer to the interpreter arguments
+//
 void createJumpCache(InterpreterArguments *interpreter_arguments);
+
 
 //------------------------------------------------------------------------------
 ///
@@ -568,7 +584,7 @@ int main(int argc, char *argv[])
         {
           // get a pointer to the first occurrence of '.'
           char *ext = strrchr(cmd, '.');
-          if (command_line_arguments.b_ && ext) //TODO: b_ == 1? ne passt so
+          if (command_line_arguments.b_ && ext)
           {
             if(strcmp(ext, ".bio") == 0)
             {
@@ -625,15 +641,6 @@ int main(int argc, char *argv[])
           }
           if (stop_reason == REGULAR_STOP) // ran to the end
           {
-            // code reset
-            memset(arguments.program_, 0, arguments.program_length_);
-
-            // TODO: what should happen, if run is called twice?
-            // breakpoint reset
-            free(arguments.breakpoints_);
-            arguments.breakpoints_ = NULL;
-            breakpoint_size = 10;
-
             program_loaded = NOT_LOADED;
           }
           else if (stop_reason == STEP_STOP)
@@ -1352,7 +1359,7 @@ int interpreter(InterpreterArguments *interpreter_arguments)
     createJumpCache(interpreter_arguments);
 
 
-  clock_t start = clock();
+  //clock_t start = clock();
 
   for (; *(interpreter_arguments->program_counter_) != 0 && steps != 0;
          steps -= direction)
@@ -1481,7 +1488,7 @@ int interpreter(InterpreterArguments *interpreter_arguments)
     interpreter_arguments->step_counter_ += direction;
   }
 
-  //printf("CLOCKS: %llu\n", (unsigned long long) (clock() - start));
+  //printf("\n\nCLOCKS: %llu\n", (unsigned long long) (clock() - start));
 
   if (direction == -1)
     interpreter_arguments->program_counter_++;
