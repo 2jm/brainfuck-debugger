@@ -48,7 +48,7 @@
 typedef struct
 {
   unsigned long long step_;      //defines at what step the program was jumping
-  int distance_;  //the jumps distance, positive or negative
+  int distance_;                 //the jumps distance, positive or negative
 } MadeJump;
 
 //------------------------------------------------------------------------------
@@ -67,8 +67,8 @@ typedef struct
 /// This struct holds a single jumppoint for the jump extension
 //
 typedef struct {
-  char *address_;
-  int id_;
+  char *address_;                //address wehre the program has to jump
+  int id_;                       //id of the jump point
 } JumpPoint;
 
 //------------------------------------------------------------------------------
@@ -1211,7 +1211,7 @@ int checkCode(InterpreterArguments *arguments, int character, int *position,
     arguments->program_[*position] = (char) character;
     (*position)++;
   }
-
+  //check if there are brackets/loops opened or closed
   if (character == '[')
     return 1;
   else if (character == ']')
@@ -1429,7 +1429,7 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
       NULL          // array_
     },
     NULL,         // jump_points_
-    1         // size_of_jump_points_
+    1             // size_of_jump_points_
   };
 
 
