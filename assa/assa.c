@@ -276,7 +276,11 @@ void step(int program_loaded, InterpreterArguments *arguments, int bonus);
 
 //------------------------------------------------------------------------------
 ///
+/// This function prints the value of a data cell in the wanted format
 ///
+/// @param program_loaded variable to check if the program is loaded
+/// @param data_segment points at the beginning of the data array
+/// @param data_pointer_ points at the present data cell
 //
 void memory(int program_loaded, unsigned char *data_segment,
             unsigned char *data_pointer_);
@@ -284,14 +288,21 @@ void memory(int program_loaded, unsigned char *data_segment,
 
 //------------------------------------------------------------------------------
 ///
+/// This function prints the bf-instruction at the wanted position
 ///
+/// @param program_loaded variable to check if the program is loaded
+/// @param program_counter points at the present position in the program array
 //
 void show(int program_loaded, char *program_counter);
 
 
 //------------------------------------------------------------------------------
 ///
+/// This function writes new user entered values into the data array
 ///
+/// @param program_loaded variable to check if the program is loaded
+/// @param data_segment points at the beginning of the data array
+/// @param data_pointer_ points at the present data cell
 //
 void change(int program_loaded, unsigned char *data_segment,
             unsigned char *data_pointer);
@@ -987,6 +998,7 @@ void memory(int program_loaded, unsigned char *data_segment,
     printf("[ERR] no program loaded\n");
     return;
   }
+  //if no format is given Hex is default
   char *number_input = strtok(NULL, " ");
   if (number_input == NULL)
   {
