@@ -1481,7 +1481,7 @@ int interpreter(InterpreterArguments *interpreter_arguments)
     interpreter_arguments->step_counter_ += direction;
   }
 
-  printf("CLOCKS: %llu\n", (unsigned long long) (clock() - start));
+  //printf("CLOCKS: %llu\n", (unsigned long long) (clock() - start));
 
   if (direction == -1)
     interpreter_arguments->program_counter_++;
