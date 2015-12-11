@@ -17,6 +17,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <time.h>
+
 
 #define NOT_LOADED       0
 #define LOADED_FROM_FILE 1
@@ -46,8 +48,8 @@
 typedef struct
 {
   unsigned long long step_;      //defines at what step the program was jumping
-  unsigned long long distance_;  //the jumps distance, positive or negative
-} Jump;
+  int distance_;  //the jumps distance, positive or negative
+} MadeJump;
 
 //------------------------------------------------------------------------------
 ///
@@ -56,9 +58,9 @@ typedef struct
 typedef struct
 {
   unsigned int count_;           //count of the jumps
-  size_t allocated_memory_;      //size of the Jump array
-  Jump *array_;                  //array where the jumps are stored
-} Jumps;
+  size_t allocated_memory_;      //size of the MadeJump array
+  MadeJump *array_;              //array where the jumps are stored
+} MadeJumps;
 
 //------------------------------------------------------------------------------
 ///
@@ -87,7 +89,7 @@ typedef struct
 typedef struct
 {
   unsigned int count_;           //count of the jumps
-  size_t allocated_memory_;      //size of the Jump array
+  size_t allocated_memory_;      //size of the MadeJump array
   OverwrittenDataByte *array_;   //array where the jumps are stored
 } OverwrittenDataBytes;
 
@@ -101,6 +103,7 @@ typedef struct
 {
   char *program_;                //array where the program is stored
   size_t program_length_;        //size of the program array
+  int *jump_cache_;              //array holding the calculated jumps for speed
   unsigned char **data_segment_; //pointer to the data segment
   size_t *data_length_;          //length of the data segment
   char *program_counter_;        //pointer pointing to the current command
@@ -110,7 +113,7 @@ typedef struct
   size_t breakpoint_count_;      //size of the breakpoint array
   unsigned long long step_counter_;   //counts the steps the program makes
   int activate_reverse_step_;
-  Jumps jumps_;                  //instance of the Jumps struct
+  MadeJumps made_jumps_;                  //instance of the MadeJumps struct
   OverwrittenDataBytes overwrittenDataBytes_;
   JumpPoint *jump_points_;
   size_t jump_point_size_;
@@ -191,12 +194,14 @@ void setBreakpoint(int program_loaded, InterpreterArguments *arguments,
 
 //------------------------------------------------------------------------------
 ///
-/// This function compares the position of two pointer
+/// This function compares two numbers. It is used by qsort.
 /// 
-/// @param pointer1 the first pointer
-/// @param pointer2 the second pointer
+/// @param pointer1 pointer to the first number
+/// @param pointer2 pointer to the second number
 ///
-/// @return the difference between the two pointer
+/// @return < 0 if number 1 is bigger than number 2
+///         = 0 if number 1 is equal to number 2
+///         > 0 if number 1 is smaller than number 2
 //
 int compareFunction(const void *pointer1, const void *pointer2);
 
@@ -342,7 +347,7 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
 ///
 /// @param pointer to the InterpreterArguments struct
 //
-void freeInterpreterArguments(InterpreterArguments *interpreterArguments);
+void freeInterpreterArguments(InterpreterArguments *interpreter_arguments);
 
 
 //------------------------------------------------------------------------------
@@ -377,6 +382,18 @@ void *saveMalloc(size_t size);
 
 //------------------------------------------------------------------------------
 ///
+/// This function allocates element * size memory, sets it to 0 and controls if
+/// there was an error and reacts to it
+///
+/// @param element count of elements
+/// @param size of one element
+///
+/// @return void pointer to the allocated memory
+//
+void *saveCalloc(size_t element_count, size_t size);
+
+//------------------------------------------------------------------------------
+///
 /// This function reallocates a memory and controls if there was an error and
 /// reacts to it
 ///
@@ -398,16 +415,19 @@ void *saveRealloc(void *pointer, size_t size);
 void expandDataSegment(unsigned char **data_segment, size_t *data_length,
                        unsigned char **data_pointer);
 
-
+// TODO
 void processUserInput(InterpreterArguments *interpreter_arguments,
                         int direction);
 
+
+// TODO
+void createJumpCache(InterpreterArguments *interpreter_arguments);
 
 //------------------------------------------------------------------------------
 ///
 /// Processes a brainfuck loop
 /// If the direction is positive it checks the condition, if it should jump it
-/// calls jumpToMatchingBrace
+/// calls searchMatchingBrace
 /// If the direction is negative it searches for the jump in the jump array
 /// and jumps backward if it finds a jump
 ///
@@ -423,18 +443,17 @@ void processLoop(InterpreterArguments *interpreter_arguments, int direction);
 ///
 /// @param interpreter_arguments all the interpreter arguments
 //
-unsigned long long jumpToMatchingBrace(InterpreterArguments
-                                        *interpreter_arguments);
+int searchMatchingBrace(char *program_iterator);
 
 
 //------------------------------------------------------------------------------
 ///
 /// This function inserts a jump in the jump array and expands it if necessary
 ///
-/// @param jumps pointer to the Jumps struct
+/// @param jumps pointer to the MadeJumps struct
 /// @param jump the jump to insert
 //
-void insertJump(Jumps *jumps, Jump jump);
+void insertMadeJump(MadeJumps *jumps, MadeJump jump);
 
 //------------------------------------------------------------------------------
 ///
@@ -549,7 +568,7 @@ int main(int argc, char *argv[])
         {
           // get a pointer to the first occurrence of '.'
           char *ext = strrchr(cmd, '.');
-          if (command_line_arguments.b_ && ext) //TODO: b_ == 1?
+          if (command_line_arguments.b_ && ext) //TODO: b_ == 1? ne passt so
           {
             if(strcmp(ext, ".bio") == 0)
             {
@@ -1329,6 +1348,12 @@ int interpreter(InterpreterArguments *interpreter_arguments)
   if (direction == -1)
     interpreter_arguments->program_counter_--;
 
+  if(interpreter_arguments->jump_cache_ == NULL)
+    createJumpCache(interpreter_arguments);
+
+
+  clock_t start = clock();
+
   for (; *(interpreter_arguments->program_counter_) != 0 && steps != 0;
          steps -= direction)
   {
@@ -1456,6 +1481,8 @@ int interpreter(InterpreterArguments *interpreter_arguments)
     interpreter_arguments->step_counter_ += direction;
   }
 
+  printf("CLOCKS: %llu\n", (unsigned long long) (clock() - start));
+
   if (direction == -1)
     interpreter_arguments->program_counter_++;
 
@@ -1474,8 +1501,11 @@ int interpreter(InterpreterArguments *interpreter_arguments)
 
 void resetInterpreterArguments(InterpreterArguments *interpreter_arguments)
 {
+  freePointer((void **) &(interpreter_arguments->program_));
+  freePointer((void**) &(interpreter_arguments->jump_cache_));
+
   interpreter_arguments->step_counter_ = 0;
-  interpreter_arguments->jumps_.count_ = 0;
+  interpreter_arguments->made_jumps_.count_ = 0;
 
   memset(*interpreter_arguments->data_segment_, 0,
          *interpreter_arguments->data_length_ * sizeof(unsigned char));
@@ -1492,6 +1522,7 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
   InterpreterArguments interpreter_arguments = {
     NULL,         // program_
     0,            // program_length_
+    NULL,         // jump_cache_
     data_segment, // data_segment_
     data_length,  // data_length_
     NULL,         // program_counter_
@@ -1501,7 +1532,7 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
     0,            // breakpoint_count_
     0,            // step_counter_
     0,            // activate_reverse_step_
-    {             // jumps_
+    {             // made_jumps_
       0,            // count_
       0,            // allocated_memory_
       NULL          // array_
@@ -1529,9 +1560,9 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
     *interpreter_arguments.data_pointer_ = *interpreter_arguments.data_segment_;
   }
 
-  interpreter_arguments.jumps_.allocated_memory_ = 200;
-  interpreter_arguments.jumps_.array_ = (Jump *) saveMalloc(
-    interpreter_arguments.jumps_.allocated_memory_ * sizeof(Jump));
+  interpreter_arguments.made_jumps_.allocated_memory_ = 200;
+  interpreter_arguments.made_jumps_.array_ = (MadeJump *) saveMalloc(
+    interpreter_arguments.made_jumps_.allocated_memory_ * sizeof(MadeJump));
 
   interpreter_arguments.overwrittenDataBytes_.allocated_memory_ = 20;
   interpreter_arguments.overwrittenDataBytes_.array_ = (OverwrittenDataByte *) saveMalloc(
@@ -1542,16 +1573,17 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
   return interpreter_arguments;
 }
 
-void freeInterpreterArguments(InterpreterArguments *interpreterArguments)
+void freeInterpreterArguments(InterpreterArguments *interpreter_arguments)
 {
-  freePointer((void **) &(interpreterArguments->program_));
-  freeDoublePointer((void ***) &(interpreterArguments->data_segment_));
-  freePointer((void **) &(interpreterArguments->data_length_));
-  freePointer((void **) &(interpreterArguments->data_pointer_));
-  freePointer((void **) &(interpreterArguments->breakpoints_));
-  freePointer((void **) &(interpreterArguments->jumps_.array_));
-  freePointer((void **) &(interpreterArguments->overwrittenDataBytes_.array_));
-  freePointer((void **) &(interpreterArguments->jump_points_));
+  freePointer((void **) &(interpreter_arguments->program_));
+  freePointer((void**) &(interpreter_arguments->jump_cache_));
+  freeDoublePointer((void ***) &(interpreter_arguments->data_segment_));
+  freePointer((void **) &(interpreter_arguments->data_length_));
+  freePointer((void **) &(interpreter_arguments->data_pointer_));
+  freePointer((void **) &(interpreter_arguments->breakpoints_));
+  freePointer((void **) &(interpreter_arguments->made_jumps_.array_));
+  freePointer((void **) &(interpreter_arguments->overwrittenDataBytes_.array_));
+  freePointer((void **) &(interpreter_arguments->jump_points_));
 }
 
 void freePointer(void **pointer)
@@ -1577,6 +1609,17 @@ void freeDoublePointer(void ***pointer)
 void *saveMalloc(size_t size)
 {
   void *pointer = malloc(size);
+  if (pointer == NULL)
+  {
+    printf("[ERR] out of memory\n");
+    exit(OUT_OF_MEMORY_RETURN_CODE);
+  }
+  return pointer;
+}
+
+void *saveCalloc(size_t member_count, size_t size)
+{
+  void *pointer = calloc(member_count, size);
   if (pointer == NULL)
   {
     printf("[ERR] out of memory\n");
@@ -1657,6 +1700,32 @@ void processUserInput(InterpreterArguments *interpreter_arguments,
   }
 }
 
+void createJumpCache(InterpreterArguments *interpreter_arguments)
+{
+  char *program_iterator = interpreter_arguments->program_;
+
+  interpreter_arguments->jump_cache_ = saveCalloc(
+    (strlen(interpreter_arguments->program_)), sizeof(int));
+
+  for(; *program_iterator != 0; program_iterator++)
+  {
+    if(*program_iterator == '[')
+    {
+      int jump_distance = searchMatchingBrace(program_iterator);
+
+      unsigned int program_counter =
+        (unsigned int) (program_iterator - interpreter_arguments->program_);
+
+      // insert the jump distance for the [ in the cache
+      interpreter_arguments->jump_cache_[program_counter] = jump_distance;
+
+      // insert the jump distance for the corresponding ] in the cache
+      interpreter_arguments->jump_cache_[program_counter + jump_distance - 1] =
+                                                  -(jump_distance-2);
+    }
+  }
+}
+
 void processLoop(InterpreterArguments *interpreter_arguments, int direction)
 {
   if (direction == 1)
@@ -1673,12 +1742,17 @@ void processLoop(InterpreterArguments *interpreter_arguments, int direction)
       )
       )
     {
-      unsigned long long distance = jumpToMatchingBrace(interpreter_arguments);
+      int distance = interpreter_arguments->jump_cache_
+                                  [interpreter_arguments->program_counter_ -
+                                    interpreter_arguments->program_];
+
+      interpreter_arguments->program_counter_ += distance;
 
       if(interpreter_arguments->activate_reverse_step_ == 1)
       {
-        insertJump(&interpreter_arguments->jumps_,
-                   (Jump) {interpreter_arguments->step_counter_, distance});
+        insertMadeJump(&interpreter_arguments->made_jumps_,
+                       (MadeJump) {interpreter_arguments->step_counter_,
+                                   distance});
       }
     }
     else
@@ -1693,16 +1767,16 @@ void processLoop(InterpreterArguments *interpreter_arguments, int direction)
     int jump_found = 0;
 
     //search from back because, the chance that the jump is at the end is high
-    for (search_loop_index = interpreter_arguments->jumps_.count_;
+    for (search_loop_index = interpreter_arguments->made_jumps_.count_;
          search_loop_index > 0; search_loop_index--)
     {
       //if the program was jumping
-      if (interpreter_arguments->jumps_.array_[search_loop_index].step_ ==
+      if (interpreter_arguments->made_jumps_.array_[search_loop_index].step_ ==
           interpreter_arguments->step_counter_ - 1)
       {
         //jump in the opposite direction
         interpreter_arguments->program_counter_ -=
-          interpreter_arguments->jumps_.array_[search_loop_index].distance_;
+          interpreter_arguments->made_jumps_.array_[search_loop_index].distance_;
 
         jump_found = 1;
       }
@@ -1713,41 +1787,33 @@ void processLoop(InterpreterArguments *interpreter_arguments, int direction)
   }
 }
 
-unsigned long long jumpToMatchingBrace(InterpreterArguments
-                                        *interpreter_arguments)
+int searchMatchingBrace(char *program_iterator)
 {
   int loop_counter = 1;
-  unsigned long long distance = 0;
-  int direction = (*(interpreter_arguments->program_counter_) == '[') ? 1 : -1;
+  int distance = 0;
 
-  distance += direction;
-  interpreter_arguments->program_counter_ += direction;
+  distance++;
+  program_iterator++;
 
-  while (loop_counter > 0)
+  while (loop_counter > 0 && *program_iterator != 0)
   {
-    if (*(interpreter_arguments->program_counter_) == '[')
+    if (*program_iterator == '[')
     {
-      loop_counter += direction;
+      loop_counter++;
     }
-    else if (*(interpreter_arguments->program_counter_) == ']')
+    else if (*program_iterator == ']')
     {
-      loop_counter -= direction;
+      loop_counter--;
     }
 
-    distance += direction;
-    interpreter_arguments->program_counter_ += direction;
-  }
-
-  if (direction == -1)
-  {
-    interpreter_arguments->program_counter_ += 2;
-    distance += 2;
+    distance++;
+    program_iterator++;
   }
 
   return distance;
 }
 
-void insertJump(Jumps *jumps, Jump jump)
+void insertMadeJump(MadeJumps *jumps, MadeJump jump)
 {
   jumps->array_[jumps->count_] = jump;
 
@@ -1758,7 +1824,7 @@ void insertJump(Jumps *jumps, Jump jump)
     //extend array
     jumps->allocated_memory_ *= 2;
     jumps->array_ = saveRealloc(jumps->array_,
-                                jumps->allocated_memory_ * sizeof(Jump));
+                                jumps->allocated_memory_ * sizeof(MadeJump));
   }
 }
 
