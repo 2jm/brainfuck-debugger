@@ -179,7 +179,11 @@ int runOnce(InterpreterArguments *arguments,
 
 //------------------------------------------------------------------------------
 ///
+/// This function gets the Breakpoints and writes them in an array
 ///
+/// @param program_loaded variable to check if a program is loaded
+/// @param arguments the interpreter arguments (including the breakpoint-array)
+/// @param breakpoints_size size of the breakpoint-array
 //
 void setBreakpoint(int program_loaded, InterpreterArguments *arguments,
                    size_t *breakpoint_size);
@@ -187,14 +191,23 @@ void setBreakpoint(int program_loaded, InterpreterArguments *arguments,
 
 //------------------------------------------------------------------------------
 ///
+/// This function compares the position of two pointer
+/// 
+/// @param pointer1 the first pointer
+/// @param pointer2 the second pointer
 ///
+/// @return the difference between the two pointer
 //
-int compareFunction(const void *a, const void *b);
+int compareFunction(const void *pointer1, const void *pointer2);
 
 
 //------------------------------------------------------------------------------
 ///
+/// This function runs the interpreter with the entered number of steps
 ///
+/// @param program_loaded variable to check if the program is loaded
+/// @param arguments all the interpreter arguments
+/// @param bonus to check if bonusfunctionality should be loaded
 //
 void step(int program_loaded, InterpreterArguments *arguments, int bonus);
 
@@ -1038,9 +1051,9 @@ void setBreakpoint(int program_loaded, InterpreterArguments *arguments,
   return;
 }
 
-int compareFunction(const void *a, const void *b)
+int compareFunction(const void *pointer1, const void *pointer2)
 {
-  return (*(int *) a - *(int *) b);
+  return (*(int *) pointer1 - *(int *) pointer2);
 }
 
 void step(int program_loaded, InterpreterArguments *arguments, int bonus)
@@ -1242,6 +1255,7 @@ void eval(InterpreterArguments *arguments, char *input_bfstring, int bonus)
 
   arguments->program_length_ = len + 1;
   arguments->program_ = saveMalloc(arguments->program_length_ * sizeof(char));
+  
   //set program_counter_ to the beginning of the code
   arguments->program_counter_ = arguments->program_;
 
