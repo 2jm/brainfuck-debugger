@@ -191,12 +191,14 @@ void setBreakpoint(int program_loaded, InterpreterArguments *arguments,
 
 //------------------------------------------------------------------------------
 ///
-/// This function compares the position of two pointer
+/// This function compares two numbers. It is used by qsort.
 /// 
 /// @param pointer1 the first pointer
 /// @param pointer2 the second pointer
 ///
-/// @return the difference between the two pointer
+/// @return < 0 if number 1 is bigger than number 2
+///         = 0 if number 1 is equal to number 2
+///         > 0 if number 1 is smaller than number 2
 //
 int compareFunction(const void *pointer1, const void *pointer2);
 
