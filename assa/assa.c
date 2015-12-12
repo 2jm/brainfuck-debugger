@@ -9,7 +9,7 @@
 //          Matthias Klotz  1530653
 //          Johannes Kopf   1431505
 //
-// Latest Changes: 08.12.2015 (by Jonas Juffinger)
+// Latest Changes: 11.12.2015 (by Matthias Klotz)
 //------------------------------------------------------------------------------
 //
 
