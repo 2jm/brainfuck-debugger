@@ -17,7 +17,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-//#include <time.h>
+
+//#define __BENCHMARK__
+#ifdef __BENCHMARK__
+#include <time.h>
+#endif
 
 
 #define NOT_LOADED       0
@@ -1240,8 +1244,9 @@ int interpreterBrainfuck(InterpreterArguments *interpreter_arguments)
   if(interpreter_arguments->jump_cache_ == NULL)
     createJumpCache(interpreter_arguments);
 
-
-  //clock_t start = clock();
+#ifdef __BENCHMARK__
+  clock_t start = clock();
+#endif
 
   for (; *(interpreter_arguments->program_counter_) != 0 && steps != 0;
          steps -= direction)
@@ -1370,7 +1375,10 @@ int interpreterBrainfuck(InterpreterArguments *interpreter_arguments)
     interpreter_arguments->step_counter_ += direction;
   }
 
-  //printf("\n\nCLOCKS: %llu\n", (unsigned long long) (clock() - start));
+#ifdef __BENCHMARK__
+  printf("\n\nCLOCKS: %llu\n", (unsigned long long) (clock() - start));
+#endif
+
 
   if (direction == -1)
     interpreter_arguments->program_counter_++;
@@ -1491,8 +1499,6 @@ void expandDataSegment(unsigned char **data_segment, size_t *data_length,
 
   //set the new memory to 0
   memset(*data_segment + (*data_length) / 2, 0, (*data_length) / 2);
-
-  printf("Expand %lu\n", *data_length);
 }
 
 
