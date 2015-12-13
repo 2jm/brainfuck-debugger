@@ -27,6 +27,7 @@
 #define NOT_LOADED       0
 #define LOADED_FROM_FILE 1
 #define LOADED_FROM_EVAL 2
+#define RUN_FINISHED     3
 
 #define REGULAR_STOP 0
 #define STEP_STOP 1
@@ -274,8 +275,10 @@ int compareFunction(const void *pointer1, const void *pointer2);
 /// @param program_loaded variable to check if the program is loaded
 /// @param arguments all the interpreter arguments
 /// @param bonus to check if bonusfunctionality should be loaded
+///
+/// @return program status
 //
-void step(int program_loaded, InterpreterArguments *arguments, int bonus);
+int step(int program_loaded, InterpreterArguments *arguments, int bonus);
 
 
 //------------------------------------------------------------------------------
@@ -597,8 +600,7 @@ int main(int argc, char *argv[])
   InterpreterArguments arguments =
     getUsableInterpreterArgumentsStruct(NULL, NULL, NULL);
 
-  CommandLineArguments command_line_arguments = {0, NULL, 0};
-  int eof = 0;
+  CommandLineArguments command_line_arguments = {0, NULL, 0, 0};
 
   parseCommandLineArguments(&command_line_arguments, argc, argv);
 
@@ -625,9 +627,10 @@ int main(int argc, char *argv[])
 
   // print first command line line output
   printf("esp> ");
-  while (fgets(line, (int) line_size, stdin) != 0 && strcmp(line, "quit\n"))
+  while ((fgets(line, (int) line_size, stdin) || 1)
+         && !ferror(stdin) && !feof(stdin)
+         && strcmp(line, "quit\n"))
   {
-    eof = 0;  //if there is an input it's not EOF
     // fgets adds at the end '\n\0'. Therefore override '\n' with '\0'
     line[strlen(line) - 1] = '\0';
 
@@ -667,6 +670,7 @@ int main(int argc, char *argv[])
           {
             return_code = loadBio(cmd, &arguments);
           }
+
           if (return_code == SUCCESS)
           {
             program_loaded = LOADED_FROM_FILE;
@@ -698,9 +702,10 @@ int main(int argc, char *argv[])
           {
             stop_reason = interpreterBio(&arguments);
           }
+
           if (stop_reason == REGULAR_STOP) // ran to the end
           {
-            program_loaded = NOT_LOADED;
+            program_loaded = RUN_FINISHED;
           }
           else if (stop_reason == STEP_STOP)
           {
@@ -708,10 +713,11 @@ int main(int argc, char *argv[])
           }
           else if (stop_reason == BREAKPOINT_STOP) // stopped at breakpoint
           {
+            // The interpreter now removes the breakpoint
             // shift unused breakpoints left to remove already used breakpoint
-            memmove(arguments.breakpoints_, arguments.breakpoints_ + 1,
+            /*memmove(arguments.breakpoints_, arguments.breakpoints_ + 1,
                     (arguments.breakpoint_count_ - 1) * sizeof(int));
-            arguments.breakpoint_count_--;
+            arguments.breakpoint_count_--;*/
           }
         }
       }
@@ -730,7 +736,8 @@ int main(int argc, char *argv[])
       }
       else if (strcmp(cmd, "step") == 0)
       {
-        step(program_loaded, &arguments, command_line_arguments.b_);
+        program_loaded = step(program_loaded, &arguments,
+                              command_line_arguments.b_);
       }
       else if (strcmp(cmd, "memory") == 0)
       {
@@ -747,11 +754,6 @@ int main(int argc, char *argv[])
                *arguments.data_pointer_);
       }
     }
-    else
-    {
-      eof = 1;  //if there's no input, it could be EOF
-      //if it's not, loop will run again
-    }
 
     // print command line line output
     printf("esp> ");
@@ -767,7 +769,7 @@ int main(int argc, char *argv[])
   evalArguments.data_length_ = NULL;
   freeInterpreterArguments(&evalArguments);
 
-  if (!eof)
+  if (!feof(stdin))
     printf("Bye.\n");
 
   return EXIT_SUCCESS;
@@ -970,27 +972,35 @@ int compareFunction(const void *pointer1, const void *pointer2)
 }
 
 
-void step(int program_loaded, InterpreterArguments *arguments, int bonus)
+int step(int program_loaded, InterpreterArguments *arguments, int bonus)
 {
   if (program_loaded != LOADED_FROM_FILE)
   {
     printf("[ERR] no program loaded\n");
-    return;
+    return program_loaded;
   }
   char *steps = strtok(NULL, " ");
-  arguments->steps_ = strtol(steps, (char **) NULL, 10);
+  if(steps == NULL)
+    arguments->steps_ = 1;
+  else
+    arguments->steps_ = strtol(steps, (char **) NULL, 10);
 
   if (arguments->steps_ == 0 || (arguments->steps_ < 0 && bonus == 0))
   {
     // don't call the interpreter with 0 steps because it would run indefinitely
     // but just to nothing.
     arguments->steps_ = 0;  //set it 0 if it is < 0
-    return;
+    return program_loaded;
   }
 
-  interpreterBrainfuck(arguments);
+  int stop_reason = interpreterBrainfuck(arguments);
+
+  if(stop_reason == REGULAR_STOP)
+    return RUN_FINISHED;
 
   arguments->steps_ = 0;
+
+  return program_loaded;
 }
 
 
@@ -1244,12 +1254,13 @@ int interpreterBrainfuck(InterpreterArguments *interpreter_arguments)
   int break_loop = 0;
   int jump_point_nr = 0;
 
-  //create a local variable for steps because it should not be changed
+  //create a local variable for steps because it should not be changed.
   //if -1 runs infinitely long (to the end of the program)
   long long steps = (interpreter_arguments->steps_ == 0) ?
               -1 : interpreter_arguments->steps_;
 
-  //the program must run shifted one to the left, increment at the end
+  //if running reverse the program must run shifted one to the left,
+  //increment at the end
   if (direction == -1)
     interpreter_arguments->program_counter_--;
 
@@ -1272,6 +1283,12 @@ int interpreterBrainfuck(InterpreterArguments *interpreter_arguments)
       if (interpreter_arguments->program_ + *breakpoint ==
           interpreter_arguments->program_counter_)
       {
+        memmove(interpreter_arguments->breakpoints_, breakpoint+1,
+                (interpreter_arguments->breakpoint_count_ -
+                  (breakpoint - interpreter_arguments->breakpoints_) - 1) *
+                  sizeof(int));
+        interpreter_arguments->breakpoint_count_--;
+
         break_loop = 1;
       }
     }
@@ -1579,11 +1596,11 @@ void createJumpCache(InterpreterArguments *interpreter_arguments)
         (unsigned int) (program_iterator - interpreter_arguments->program_);
 
       // insert the jump distance for the [ in the cache
-      interpreter_arguments->jump_cache_[program_counter] = jump_distance;
+      interpreter_arguments->jump_cache_[program_counter] = jump_distance - 1;
 
       // insert the jump distance for the corresponding ] in the cache
       interpreter_arguments->jump_cache_[program_counter + jump_distance - 1] =
-                                                  -(jump_distance-2);
+                                                  -(jump_distance - 1);
     }
   }
 }
