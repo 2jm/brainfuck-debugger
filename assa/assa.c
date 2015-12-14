@@ -29,7 +29,7 @@
 #define LOADED_FROM_EVAL 2
 #define RUN_FINISHED     3
 
-#define DATA_SEGMENT_AVAILABLE 8
+#define DATA_SEGMENT_AVAILABLE 1
 
 #define REGULAR_STOP 0
 #define STEP_STOP 1
@@ -390,6 +390,20 @@ int checkCode(InterpreterArguments *interpreter_arguments, int character,
 int interpreterBrainfuck(InterpreterArguments *interpreter_arguments);
 
 
+
+//------------------------------------------------------------------------------
+///
+/// Checks if the program counter is on a breakpoint
+///
+/// @param interpreter_arguments pointer to an InterpreterArguments struct with
+///                              all the arguments
+///
+/// @return  0 if it is not on a breakpoint
+///          1 if it is on a breakpoint
+//
+int onBreakpoint(InterpreterArguments *interpreter_arguments);
+
+
 //------------------------------------------------------------------------------
 ///
 /// This function returns an InterpreterArguments struct
@@ -492,6 +506,7 @@ int searchMatchingBrace(char *program_iterator);
 /// @param jump the jump to insert
 //
 void insertMadeJump(MadeJumps *jumps, MadeJump jump);
+
 
 //------------------------------------------------------------------------------
 ///
@@ -1243,6 +1258,36 @@ int checkCode(InterpreterArguments *arguments, int character, int *position,
 }
 
 
+
+
+
+/*
+War mal eine Idee
+
+#define COMMAND_MOVE_LEFT 0
+#define COMMAND_MOVE_RIGHT 1
+#define COMMAND_INCREMENT 2
+#define COMMAND_DECREMENT 3
+#define COMMAND_LOOP_START 4
+#define COMMAND_LOOP_END 5
+#define COMMAND_PRINT 6
+#define COMMAND_INPUT 7
+#define COMMAND_SET_JUMP_POINT 8
+#define COMMAND_JUMP 9
+
+const char command[10][2] = {
+  {'>','<'},
+  {'<','>'},
+  {'+','-'},
+  {'-','+'},
+  {'[',']'},
+  {']','['},
+  {'.','.'},
+  {',',','},
+  {'&','&'},
+  {'%','%'}
+};*/
+
 int interpreterBrainfuck(InterpreterArguments *interpreter_arguments)
 {
   // non static variables
@@ -1282,34 +1327,18 @@ int interpreterBrainfuck(InterpreterArguments *interpreter_arguments)
   for (; *(interpreter_arguments->program_counter_) != 0 && steps != 0;
          steps -= direction)
   {
-    //check if a breakpoint is reached
-    int *breakpoint;
-    for (breakpoint = interpreter_arguments->breakpoints_;
-         breakpoint < interpreter_arguments->breakpoints_ +
-                        interpreter_arguments->breakpoint_count_; breakpoint++)
-    {
-      if (interpreter_arguments->program_ + *breakpoint ==
-          interpreter_arguments->program_counter_)
-      {
-        memmove(interpreter_arguments->breakpoints_, breakpoint+1,
-                (interpreter_arguments->breakpoint_count_ -
-                  (breakpoint - interpreter_arguments->breakpoints_) - 1) *
-                  sizeof(int));
-        interpreter_arguments->breakpoint_count_--;
-
-        break_loop = 1;
-      }
-    }
-    if (break_loop)
+    if (onBreakpoint(interpreter_arguments))
       break;
 
     // ------------  >  ------------
     if (*(interpreter_arguments->program_counter_) == move_forward)
     {
+      // check it the data pointer is out of the data segment
       if (++(*interpreter_arguments->data_pointer_) >
           *interpreter_arguments->data_segment_ +
           *(interpreter_arguments->data_length_) - 1)
       {
+        // if so expand the data segment
         expandDataSegment(interpreter_arguments->data_segment_,
                           interpreter_arguments->data_length_,
                           interpreter_arguments->data_pointer_);
@@ -1321,9 +1350,11 @@ int interpreterBrainfuck(InterpreterArguments *interpreter_arguments)
       // ------------  <  ------------
     else if (*(interpreter_arguments->program_counter_) == move_back)
     {
+      // check if the data pointer gets to small
       if (--(*interpreter_arguments->data_pointer_) <
           *interpreter_arguments->data_segment_)
       {
+        // if so don't let it
         (*interpreter_arguments->data_pointer_)++;
       }
 
@@ -1433,6 +1464,30 @@ int interpreterBrainfuck(InterpreterArguments *interpreter_arguments)
   return REGULAR_STOP;
 }
 
+int onBreakpoint(InterpreterArguments *interpreter_arguments)
+{
+  int *breakpoint;
+  for (breakpoint = interpreter_arguments->breakpoints_;
+       breakpoint < interpreter_arguments->breakpoints_ +
+                    interpreter_arguments->breakpoint_count_; breakpoint++)
+  {
+    if (interpreter_arguments->program_ + *breakpoint ==
+        interpreter_arguments->program_counter_)
+    {
+      // remove the breakpoint from the array by moving the other breakpoints
+      // over it
+      memmove(interpreter_arguments->breakpoints_, breakpoint+1,
+              (interpreter_arguments->breakpoint_count_ -
+               (breakpoint - interpreter_arguments->breakpoints_) - 1) *
+              sizeof(int));
+
+      interpreter_arguments->breakpoint_count_--;
+
+      return 1;
+    }
+  }
+  return 0;
+}
 
 InterpreterArguments getUsableInterpreterArgumentsStruct(
   unsigned char **data_segment, size_t *data_length,
@@ -1484,8 +1539,9 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
     interpreter_arguments.made_jumps_.allocated_memory_ * sizeof(MadeJump));
 
   interpreter_arguments.overwrittenDataBytes_.allocated_memory_ = 20;
-  interpreter_arguments.overwrittenDataBytes_.array_ = (OverwrittenDataByte *) saveMalloc(
-    interpreter_arguments.overwrittenDataBytes_.allocated_memory_ * sizeof(OverwrittenDataByte));
+  interpreter_arguments.overwrittenDataBytes_.array_ = (OverwrittenDataByte *)
+    saveMalloc(interpreter_arguments.overwrittenDataBytes_.allocated_memory_ *
+                  sizeof(OverwrittenDataByte));
 
   //*interpreter_arguments.jump_points_ = saveMalloc(1);
 
@@ -1787,6 +1843,7 @@ void push(Loop **top, char *data_ptr, int *cell)
   *top = new_item;          // top now points to new item
 }
 
+
 char *pop(Loop **top)
 {
   Loop *old_top = *top;       // remember the old top
@@ -1872,6 +1929,7 @@ int interpreterBio(InterpreterArguments *interpreter_arguments)
   return REGULAR_STOP;
 }
 
+
 int getNextCmd(char **program_ctr, int *cell)
 {
   int ret = -1;
@@ -1933,6 +1991,7 @@ int getNextCmd(char **program_ctr, int *cell)
   }
   return ret;
 }
+
 
 int loadBio(char *file_directory, InterpreterArguments *arguments)
 {
