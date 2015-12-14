@@ -25,8 +25,8 @@
 
 
 #define NOT_LOADED       0
-#define LOADED_FROM_FILE 1
-#define LOADED_FROM_EVAL 2
+#define LOADED_FROM_EVAL 1
+#define LOADED_FROM_FILE 2
 #define RUN_FINISHED     3
 
 #define DATA_SEGMENT_AVAILABLE 1
@@ -73,7 +73,8 @@ typedef struct
 ///
 /// This struct holds a single jumppoint for the jump extension
 //
-typedef struct {
+typedef struct
+{
   char *address_;
   int id_;
 } JumpPoint;
@@ -99,7 +100,6 @@ typedef struct
   size_t allocated_memory_;      //size of the MadeJump array
   OverwrittenDataByte *array_;   //array where the jumps are stored
 } OverwrittenDataBytes;
-
 
 
 //------------------------------------------------------------------------------
@@ -152,7 +152,6 @@ typedef struct Loop_
   struct Loop_ *next;
   int cell_;
 } Loop;
-
 
 
 //------------------------------------------------------------------------------
@@ -208,7 +207,6 @@ void freePointer(void **pointer);
 /// @param pointer to a double pointer
 //
 void freeDoublePointer(void ***pointer);
-
 
 
 //------------------------------------------------------------------------------
@@ -390,7 +388,6 @@ int checkCode(InterpreterArguments *interpreter_arguments, int character,
 int interpreterBrainfuck(InterpreterArguments *interpreter_arguments);
 
 
-
 //------------------------------------------------------------------------------
 ///
 /// Checks if the program counter is on a breakpoint
@@ -463,7 +460,7 @@ void expandDataSegment(unsigned char **data_segment, size_t *data_length,
 /// @param direction Direction the program is running
 //
 void processUserInput(InterpreterArguments *interpreter_arguments,
-                        int direction);
+                      int direction);
 
 
 //------------------------------------------------------------------------------
@@ -599,8 +596,6 @@ void push(Loop **top, char *data_ptr, int *cell);
 char *pop(Loop **top);
 
 
-
-
 //------------------------------------------------------------------------------
 ///
 /// The main program.
@@ -665,7 +660,7 @@ int main(int argc, char *argv[])
           char *ext = strrchr(cmd, '.');
           if (command_line_arguments.b_ && ext)
           {
-            if(strcmp(ext, ".bio") == 0)
+            if (strcmp(ext, ".bio") == 0)
             {
               arguments.loaded_language = 1;
             }
@@ -679,12 +674,12 @@ int main(int argc, char *argv[])
             arguments.loaded_language = 0;
           }
           int return_code = 0;
-          if(arguments.loaded_language == 0)
+          if (arguments.loaded_language == 0)
           {
             return_code = loadBrainfuck(cmd, &arguments,
                                         command_line_arguments.b_);
           }
-          else if(arguments.loaded_language == 1)
+          else if (arguments.loaded_language == 1)
           {
             return_code = loadBio(cmd, &arguments);
           }
@@ -714,11 +709,11 @@ int main(int argc, char *argv[])
         else
         {
           int stop_reason = -1;
-          if(arguments.loaded_language == 0)
+          if (arguments.loaded_language == 0)
           {
             stop_reason = interpreterBrainfuck(&arguments);
           }
-          else if(arguments.loaded_language == 1)
+          else if (arguments.loaded_language == 1)
           {
             stop_reason = interpreterBio(&arguments);
           }
@@ -893,7 +888,7 @@ void parseCommandLineArguments(CommandLineArguments *command_line_arguments,
     }
   }
 
-  if(command_line_arguments->r_ == 1 && command_line_arguments->b_ == 0)
+  if (command_line_arguments->r_ == 1 && command_line_arguments->b_ == 0)
   {
     command_line_arguments->r_ = 0;
   }
@@ -1003,7 +998,7 @@ int step(int program_loaded, InterpreterArguments *arguments, int bonus)
     return program_loaded;
   }
   char *steps = strtok(NULL, " ");
-  if(steps == NULL)
+  if (steps == NULL)
     arguments->steps_ = 1;
   else
     arguments->steps_ = strtol(steps, (char **) NULL, 10);
@@ -1018,7 +1013,7 @@ int step(int program_loaded, InterpreterArguments *arguments, int bonus)
 
   int stop_reason = interpreterBrainfuck(arguments);
 
-  if(stop_reason == REGULAR_STOP)
+  if (stop_reason == REGULAR_STOP)
     return RUN_FINISHED;
 
   arguments->steps_ = 0;
@@ -1192,7 +1187,7 @@ int loadBrainfuck(char *file_directory, InterpreterArguments *arguments,
 
   fclose(file);
 
-  return LOADED_FROM_FILE;
+  return SUCCESS;
 }
 
 
@@ -1210,7 +1205,7 @@ void eval(InterpreterArguments *arguments, char *input_bfstring, int bonus)
 
   arguments->program_length_ = len + 1;
   arguments->program_ = saveMalloc(arguments->program_length_ * sizeof(char));
-  
+
   //set program_counter_ to the beginning of the code
   arguments->program_counter_ = arguments->program_;
 
@@ -1258,9 +1253,6 @@ int checkCode(InterpreterArguments *arguments, int character, int *position,
 }
 
 
-
-
-
 /*
 War mal eine Idee
 
@@ -1304,20 +1296,20 @@ int interpreterBrainfuck(InterpreterArguments *interpreter_arguments)
   const char jump_point = (char) '&';
   const char jump = (char) '%';
 
-  int break_loop = 0;
+  int on_breakpoint = 0;
   int jump_point_nr = 0;
 
   //create a local variable for steps because it should not be changed.
   //if -1 runs infinitely long (to the end of the program)
   long long steps = (interpreter_arguments->steps_ == 0) ?
-              -1 : interpreter_arguments->steps_;
+                    -1 : interpreter_arguments->steps_;
 
   //if running reverse the program must run shifted one to the left,
   //increment at the end
   if (direction == -1)
     interpreter_arguments->program_counter_--;
 
-  if(interpreter_arguments->jump_cache_ == NULL)
+  if (interpreter_arguments->jump_cache_ == NULL)
     createJumpCache(interpreter_arguments);
 
 #ifdef __BENCHMARK__
@@ -1327,7 +1319,7 @@ int interpreterBrainfuck(InterpreterArguments *interpreter_arguments)
   for (; *(interpreter_arguments->program_counter_) != 0 && steps != 0;
          steps -= direction)
   {
-    if (onBreakpoint(interpreter_arguments))
+    if ((on_breakpoint = onBreakpoint(interpreter_arguments)))
       break;
 
     // ------------  >  ------------
@@ -1429,12 +1421,12 @@ int interpreterBrainfuck(InterpreterArguments *interpreter_arguments)
 
       // ------------  %  ------------
     else if (*(interpreter_arguments->program_counter_) == jump)
-    { 
+    {
       if (checkForExistingJumpPoint(interpreter_arguments) != -1)
-      { 
+      {
         jump_point_nr = checkForExistingJumpPoint(interpreter_arguments);
-        interpreter_arguments->program_counter_ = 
-        interpreter_arguments->jump_points_[jump_point_nr].address_;
+        interpreter_arguments->program_counter_ =
+          interpreter_arguments->jump_points_[jump_point_nr].address_;
       }
 
       interpreter_arguments->program_counter_ += direction;
@@ -1456,7 +1448,7 @@ int interpreterBrainfuck(InterpreterArguments *interpreter_arguments)
     return STEP_STOP;
   }
 
-  if (break_loop)
+  if (on_breakpoint)
   {
     return BREAKPOINT_STOP;
   }
@@ -1476,7 +1468,7 @@ int onBreakpoint(InterpreterArguments *interpreter_arguments)
     {
       // remove the breakpoint from the array by moving the other breakpoints
       // over it
-      memmove(interpreter_arguments->breakpoints_, breakpoint+1,
+      memmove(interpreter_arguments->breakpoints_, breakpoint + 1,
               (interpreter_arguments->breakpoint_count_ -
                (breakpoint - interpreter_arguments->breakpoints_) - 1) *
               sizeof(int));
@@ -1541,7 +1533,7 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
   interpreter_arguments.overwrittenDataBytes_.allocated_memory_ = 20;
   interpreter_arguments.overwrittenDataBytes_.array_ = (OverwrittenDataByte *)
     saveMalloc(interpreter_arguments.overwrittenDataBytes_.allocated_memory_ *
-                  sizeof(OverwrittenDataByte));
+               sizeof(OverwrittenDataByte));
 
   //*interpreter_arguments.jump_points_ = saveMalloc(1);
 
@@ -1552,7 +1544,7 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
 void resetInterpreterArguments(InterpreterArguments *interpreter_arguments)
 {
   freePointer((void **) &(interpreter_arguments->program_));
-  freePointer((void**) &(interpreter_arguments->jump_cache_));
+  freePointer((void **) &(interpreter_arguments->jump_cache_));
 
   interpreter_arguments->step_counter_ = 0;
   interpreter_arguments->made_jumps_.count_ = 0;
@@ -1569,7 +1561,7 @@ void resetInterpreterArguments(InterpreterArguments *interpreter_arguments)
 void freeInterpreterArguments(InterpreterArguments *interpreter_arguments)
 {
   freePointer((void **) &(interpreter_arguments->program_));
-  freePointer((void**) &(interpreter_arguments->jump_cache_));
+  freePointer((void **) &(interpreter_arguments->jump_cache_));
   freeDoublePointer((void ***) &(interpreter_arguments->data_segment_));
   freePointer((void **) &(interpreter_arguments->data_length_));
   freePointer((void **) &(interpreter_arguments->data_pointer_));
@@ -1600,7 +1592,7 @@ void processUserInput(InterpreterArguments *interpreter_arguments,
 {
   if (direction == 1)
   {
-    if(interpreter_arguments->activate_reverse_step_ == 1)
+    if (interpreter_arguments->activate_reverse_step_ == 1)
     {
       insertOverwrittenDataByte(&(interpreter_arguments->overwrittenDataBytes_),
                                 (OverwrittenDataByte) {
@@ -1621,13 +1613,13 @@ void processUserInput(InterpreterArguments *interpreter_arguments,
     //search from back because, the chance that the overwrittenDataByte is at
     // the end is high
     for (search_loop_index =
-           interpreter_arguments->overwrittenDataBytes_.count_-1;
+           interpreter_arguments->overwrittenDataBytes_.count_ - 1;
          search_loop_index >= 0; search_loop_index--)
     {
       //if this is the correct value
       if (interpreter_arguments->overwrittenDataBytes_.
         array_[search_loop_index].step_ ==
-        interpreter_arguments->step_counter_ - 1)
+          interpreter_arguments->step_counter_ - 1)
       {
         //set it
         **interpreter_arguments->data_pointer_ =
@@ -1650,9 +1642,9 @@ void createJumpCache(InterpreterArguments *interpreter_arguments)
   interpreter_arguments->jump_cache_ = saveCalloc(
     (strlen(interpreter_arguments->program_)), sizeof(int));
 
-  for(; *program_iterator != 0; program_iterator++)
+  for (; *program_iterator != 0; program_iterator++)
   {
-    if(*program_iterator == '[')
+    if (*program_iterator == '[')
     {
       int jump_distance = searchMatchingBrace(program_iterator);
 
@@ -1664,7 +1656,7 @@ void createJumpCache(InterpreterArguments *interpreter_arguments)
 
       // insert the jump distance for the corresponding ] in the cache
       interpreter_arguments->jump_cache_[program_counter + jump_distance - 1] =
-                                                  -(jump_distance - 1);
+        -(jump_distance - 1);
     }
   }
 }
@@ -1687,12 +1679,12 @@ void processLoop(InterpreterArguments *interpreter_arguments, int direction)
       )
     {
       int distance = interpreter_arguments->jump_cache_
-                                  [interpreter_arguments->program_counter_ -
-                                    interpreter_arguments->program_];
+      [interpreter_arguments->program_counter_ -
+       interpreter_arguments->program_];
 
       interpreter_arguments->program_counter_ += distance;
 
-      if(interpreter_arguments->activate_reverse_step_ == 1)
+      if (interpreter_arguments->activate_reverse_step_ == 1)
       {
         insertMadeJump(&interpreter_arguments->made_jumps_,
                        (MadeJump) {interpreter_arguments->step_counter_,
@@ -1779,7 +1771,7 @@ void insertOverwrittenDataByte(OverwrittenDataBytes *overwrittenDataBytes,
                                OverwrittenDataByte overwrittenDataByte)
 {
   overwrittenDataBytes->array_[overwrittenDataBytes->count_] =
-                                                          overwrittenDataByte;
+    overwrittenDataByte;
 
   overwrittenDataBytes->count_++;
 
@@ -1790,7 +1782,7 @@ void insertOverwrittenDataByte(OverwrittenDataBytes *overwrittenDataBytes,
     overwrittenDataBytes->array_ =
       saveRealloc(overwrittenDataBytes->array_,
                   overwrittenDataBytes->allocated_memory_ *
-                    sizeof(OverwrittenDataByte));
+                  sizeof(OverwrittenDataByte));
   }
 }
 
@@ -1807,7 +1799,8 @@ void newJumpPoint(InterpreterArguments *arguments, int jump_point)
   {
     arguments->jump_point_size_++;
     arguments->jump_points_ = saveRealloc(arguments->jump_points_,
-                              arguments->jump_point_size_ * sizeof(JumpPoint));
+                                          arguments->jump_point_size_ *
+                                          sizeof(JumpPoint));
   }
 
   // add next jumppoint
@@ -1886,14 +1879,14 @@ int interpreterBio(InterpreterArguments *interpreter_arguments)
       {
         // go to matching end bracket
         int found_right = 1;
-        while(found_right != 0)
+        while (found_right != 0)
         {
           interpreter_arguments->program_counter_++;
-          if(*(interpreter_arguments->program_counter_) == '}')
+          if (*(interpreter_arguments->program_counter_) == '}')
           {
             found_right--;
           }
-          else if(*(interpreter_arguments->program_counter_) == '{')
+          else if (*(interpreter_arguments->program_counter_) == '{')
           {
             found_right++;
           }
@@ -1906,7 +1899,7 @@ int interpreterBio(InterpreterArguments *interpreter_arguments)
     }
     else if (cmd == 3)
     {
-      if((*(interpreter_arguments->data_segment_))[loop_stack->cell_] != 0)
+      if ((*(interpreter_arguments->data_segment_))[loop_stack->cell_] != 0)
       {
         if (loop_stack == NULL)
         {
@@ -1977,7 +1970,8 @@ int getNextCmd(char **program_ctr, int *cell)
     *cell = *(*program_ctr + 2) - 'x';
     if (0 <= *cell && *cell <= 2)
     {
-      if (!((ret == 2 && *(*program_ctr + 3) == '{') || (ret == 4 && *(*program_ctr + 3) == ';')))
+      if (!((ret == 2 && *(*program_ctr + 3) == '{') ||
+            (ret == 4 && *(*program_ctr + 3) == ';')))
       {
         ret = -1;
       }
@@ -2065,5 +2059,5 @@ int loadBio(char *file_directory, InterpreterArguments *arguments)
 
   fclose(file);
 
-  return LOADED_FROM_FILE;
+  return SUCCESS;
 }
