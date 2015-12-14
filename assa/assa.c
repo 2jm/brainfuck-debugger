@@ -29,6 +29,8 @@
 #define LOADED_FROM_EVAL 2
 #define RUN_FINISHED     3
 
+#define DATA_SEGMENT_AVAILABLE 8
+
 #define REGULAR_STOP 0
 #define STEP_STOP 1
 #define BREAKPOINT_STOP 2
@@ -289,7 +291,7 @@ int step(int program_loaded, InterpreterArguments *arguments, int bonus);
 /// @param data_segment points at the beginning of the data array
 /// @param data_pointer_ points at the present data cell
 //
-void memory(int program_loaded, unsigned char *data_segment,
+void memory(int data_segment_availability, unsigned char *data_segment,
             unsigned char *data_pointer_);
 
 
@@ -311,7 +313,7 @@ void show(int program_loaded, char *program_counter);
 /// @param data_segment points at the beginning of the data array
 /// @param data_pointer_ points at the present data cell
 //
-void change(int program_loaded, unsigned char *data_segment,
+void change(int data_segment_availability, unsigned char *data_segment,
             unsigned char *data_pointer);
 
 
@@ -323,7 +325,7 @@ void change(int program_loaded, unsigned char *data_segment,
 /// @param binary_number array where the converted number is written
 /// @param digits number of digits the binary number will have
 //
-void binary(char number, char *binary_number, int digits);
+void binary(unsigned char number, char *binary_number, int digits);
 
 
 //------------------------------------------------------------------------------
@@ -614,7 +616,8 @@ int main(int argc, char *argv[])
     arguments.activate_reverse_step_ = 1;
   }
 
-  int program_loaded = NOT_LOADED;
+  int program_status = NOT_LOADED;
+  int data_segment_availability = !DATA_SEGMENT_AVAILABLE;
   size_t breakpoint_size = 10;
   // allocate char array for console input
   size_t line_size = 100;
@@ -673,12 +676,14 @@ int main(int argc, char *argv[])
 
           if (return_code == SUCCESS)
           {
-            program_loaded = LOADED_FROM_FILE;
+            program_status = LOADED_FROM_FILE;
+            data_segment_availability = !DATA_SEGMENT_AVAILABLE;
           }
           else
           {
-            program_loaded = NOT_LOADED;
+            program_status = NOT_LOADED;
           }
+
         }
         else
         {
@@ -687,7 +692,7 @@ int main(int argc, char *argv[])
       }
       else if (strcmp(cmd, "run") == 0)
       {
-        if (program_loaded != LOADED_FROM_FILE)
+        if (program_status != LOADED_FROM_FILE)
         {
           printf("[ERR] no program loaded\n");
         }
@@ -705,7 +710,7 @@ int main(int argc, char *argv[])
 
           if (stop_reason == REGULAR_STOP) // ran to the end
           {
-            program_loaded = RUN_FINISHED;
+            program_status = RUN_FINISHED;
           }
           else if (stop_reason == STEP_STOP)
           {
@@ -713,12 +718,11 @@ int main(int argc, char *argv[])
           }
           else if (stop_reason == BREAKPOINT_STOP) // stopped at breakpoint
           {
-            // The interpreter now removes the breakpoint
-            // shift unused breakpoints left to remove already used breakpoint
-            /*memmove(arguments.breakpoints_, arguments.breakpoints_ + 1,
-                    (arguments.breakpoint_count_ - 1) * sizeof(int));
-            arguments.breakpoint_count_--;*/
+            // does nothing anymore because the breakpoint is cleared in the
+            // interpreter
           }
+
+          data_segment_availability = DATA_SEGMENT_AVAILABLE;
         }
       }
       else if (strcmp(cmd, "eval") == 0)
@@ -726,31 +730,35 @@ int main(int argc, char *argv[])
         char *bfstring = strtok(NULL, " ");
         eval(&evalArguments, bfstring, command_line_arguments.b_);
 
-        //only set the program_loaded variable if no program was loaded yet
-        if (program_loaded == NOT_LOADED)
-          program_loaded = LOADED_FROM_EVAL;
+        data_segment_availability = DATA_SEGMENT_AVAILABLE;
+
+        //only set the program_status variable if no program was loaded yet
+        if (program_status == NOT_LOADED)
+          program_status = LOADED_FROM_EVAL;
       }
       else if (strcmp(cmd, "break") == 0)
       {
-        setBreakpoint(program_loaded, &arguments, &breakpoint_size);
+        setBreakpoint(program_status, &arguments, &breakpoint_size);
       }
       else if (strcmp(cmd, "step") == 0)
       {
-        program_loaded = step(program_loaded, &arguments,
+        program_status = step(program_status, &arguments,
                               command_line_arguments.b_);
+
+        data_segment_availability = DATA_SEGMENT_AVAILABLE;
       }
       else if (strcmp(cmd, "memory") == 0)
       {
-        memory(program_loaded, *arguments.data_segment_,
+        memory(data_segment_availability, *arguments.data_segment_,
                *arguments.data_pointer_);
       }
       else if (strcmp(cmd, "show") == 0)
       {
-        show(program_loaded, arguments.program_counter_);
+        show(program_status, arguments.program_counter_);
       }
       else if (strcmp(cmd, "change") == 0)
       {
-        change(program_loaded, *arguments.data_segment_,
+        change(data_segment_availability, *arguments.data_segment_,
                *arguments.data_pointer_);
       }
     }
@@ -1004,10 +1012,10 @@ int step(int program_loaded, InterpreterArguments *arguments, int bonus)
 }
 
 
-void memory(int program_loaded, unsigned char *data_segment,
+void memory(int data_segment_availability, unsigned char *data_segment,
             unsigned char *data_pointer_)
 {
-  if (program_loaded == NOT_LOADED)
+  if (data_segment_availability == !DATA_SEGMENT_AVAILABLE)
   {
     printf("[ERR] no program loaded\n");
     return;
@@ -1067,10 +1075,10 @@ void show(int program_loaded, char *program_counter)
 }
 
 
-void change(int program_loaded, unsigned char *data_segment,
+void change(int data_segment_availability, unsigned char *data_segment,
             unsigned char *data_pointer)
 {
-  if (program_loaded == NOT_LOADED)
+  if (data_segment_availability == !DATA_SEGMENT_AVAILABLE)
   {
     printf("[ERR] no program loaded\n");
     return;
@@ -1097,7 +1105,7 @@ void change(int program_loaded, unsigned char *data_segment,
 }
 
 
-void binary(char number, char *binary_number, int digits)
+void binary(unsigned char number, char *binary_number, int digits)
 {
   // fill binary_number array from the end, to let the binary number be correct
   int counter = digits - 1;
