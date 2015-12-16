@@ -798,7 +798,7 @@ void debugger(InterpreterArguments *arguments,
   int data_segment_availability = !DATA_SEGMENT_AVAILABLE;
   // allocate char array for console input
   size_t line_size = 100;
-  char *line = calloc(line_size, sizeof(char));
+  char *line = saveCalloc(line_size, sizeof(char));
 
   InterpreterArguments evalArguments = getUsableInterpreterArgumentsStruct(
     arguments->data_segment_, arguments->data_length_, arguments->data_pointer_
@@ -1601,7 +1601,7 @@ InterpreterArguments getUsableInterpreterArgumentsStruct(
 
     interpreter_arguments.data_segment_ = saveMalloc(sizeof(unsigned char *));
     *interpreter_arguments.data_segment_ =
-      calloc(*interpreter_arguments.data_length_, sizeof(unsigned char));
+      saveCalloc(*interpreter_arguments.data_length_, sizeof(unsigned char));
 
     interpreter_arguments.data_pointer_ = saveMalloc(sizeof(unsigned char *));
     *interpreter_arguments.data_pointer_ = *interpreter_arguments.data_segment_;
@@ -1910,7 +1910,7 @@ int checkForExistingJumpPoint(InterpreterArguments *arguments)
 void push(Loop **top, char *data_ptr, int *cell)
 {
   // make new stack item and copy data to it:
-  Loop *new_item = malloc(sizeof(Loop));
+  Loop *new_item = saveMalloc(sizeof(Loop));
   new_item->data_ptr_ = data_ptr;
   new_item->cell_ = *cell;
 
@@ -1931,7 +1931,7 @@ char *pop(Loop **top)
 // TODO: only reserve 3 chars in interpreter_arguments->data_segment_ for BIO (as is written in specs of BIO)
 int interpreterBio(InterpreterArguments *interpreter_arguments)
 {
-  int *cell = calloc(1, sizeof(int));
+  int *cell = saveCalloc(1, sizeof(int));
   Loop *loop_stack = NULL;
 
   for (; *(interpreter_arguments->program_counter_) != '\0';
