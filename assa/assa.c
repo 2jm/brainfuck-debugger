@@ -163,7 +163,7 @@ typedef struct
 typedef struct Loop_
 {
   char *data_ptr_;
-  struct Loop_ *next;
+  struct Loop_ *next_;
   int cell_;
 } Loop;
 
@@ -1532,6 +1532,7 @@ int interpreterBrainfuck(InterpreterArguments *interpreter_arguments)
   return REGULAR_STOP;
 }
 
+
 int onBreakpoint(InterpreterArguments *interpreter_arguments)
 {
   int *breakpoint;
@@ -1556,6 +1557,7 @@ int onBreakpoint(InterpreterArguments *interpreter_arguments)
   }
   return 0;
 }
+
 
 InterpreterArguments getUsableInterpreterArgumentsStruct(
   unsigned char **data_segment, size_t *data_length,
@@ -1912,7 +1914,7 @@ void push(Loop **top, char *data_ptr, int *cell)
   new_item->data_ptr_ = data_ptr;
   new_item->cell_ = *cell;
 
-  new_item->next = *top;    // next points to previous top
+  new_item->next_ = *top;    // next points to previous top
   *top = new_item;          // top now points to new item
 }
 
@@ -1921,7 +1923,7 @@ char *pop(Loop **top)
 {
   Loop *old_top = *top;       // remember the old top
   char *data_ptr = old_top->data_ptr_;   // remember the old data
-  *top = old_top->next;       // move top down
+  *top = old_top->next_;       // move top down
   free(old_top);              // now we can free the old StackItem
   return data_ptr;            // and return the data we remembered
 }
