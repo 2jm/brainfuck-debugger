@@ -24,6 +24,15 @@
 #endif
 
 
+#define SUCCESS 1
+
+// Return values of the program
+#define WRONG_USAGE_RETURN_CODE      1
+#define OUT_OF_MEMORY_RETURN_CODE    2
+#define FILE_PARSE_ERROR_RETURN_CODE 3
+#define FILE_READ_ERROR_RETURN_CODE  4
+
+// Program status
 #define NOT_LOADED       0
 #define LOADED_FROM_EVAL 1
 #define LOADED_FROM_FILE 2
@@ -31,22 +40,18 @@
 
 #define DATA_SEGMENT_AVAILABLE 1
 
+// Return values of the interpreters
 #define UNDEFINED_COMMAND_STOP  -1
 #define REGULAR_STOP             0
 #define STEP_STOP                1
 #define BREAKPOINT_STOP          2
 #define BRACES_NOT_MATCHING_STOP 3
 
-#define SUCCESS 1
-
+// File errors
 #define FILE_PARSE_ERROR -3
 #define FILE_READ_ERROR  -4
 
-#define WRONG_USAGE_RETURN_CODE      1
-#define OUT_OF_MEMORY_RETURN_CODE    2
-#define FILE_PARSE_ERROR_RETURN_CODE 3
-#define FILE_READ_ERROR_RETURN_CODE  4
-
+// Defines for the bio interpreter
 #define BIO_INCREMENT_BLOCK      0
 #define BIO_DECREMENT_BLOCK      1
 #define BIO_WHILE_START_BLOCK    2
@@ -410,12 +415,13 @@ int loadBrainfuck(char *filedirectory, InterpreterArguments *arguments,
 ///
 /// Manipulating the datasegment with a user entered bf-code
 ///
-/// @param **data Datasegment
-/// @param *data_length Length of the datasegment
-/// @param *program Array in which the bf-code gets written
-/// @param **data_pointer Pointer to the actual position in the datasegment
-/// @param *input_code The bf-code to execute, which was given with the
-///         function call
+/// @param arguments Pointer to all the interpreter arguments
+/// @param input_bfstring The bf-code to execute, which was given with the
+///                       function call
+/// @param bonus Variable to check if the -b flag is set
+/// @param program_status Pointer to the program_status variable
+/// @param data_segment_availability Pointer to the data segment availability
+///                                  variable
 //
 void eval(InterpreterArguments *arguments, char *input_bfstring, int bonus,
           int *program_status, int *data_segment_availability);
