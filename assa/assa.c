@@ -415,12 +415,13 @@ int loadBrainfuck(char *filedirectory, InterpreterArguments *arguments,
 ///
 /// Manipulating the datasegment with a user entered bf-code
 ///
-/// @param **data Datasegment
-/// @param *data_length Length of the datasegment
-/// @param *program Array in which the bf-code gets written
-/// @param **data_pointer Pointer to the actual position in the datasegment
-/// @param *input_code The bf-code to execute, which was given with the
-///         function call
+/// @param arguments Pointer to all the interpreter arguments
+/// @param input_bfstring The bf-code to execute, which was given with the
+///                       function call
+/// @param bonus Variable to check if the -b flag is set
+/// @param program_status Pointer to the program_status variable
+/// @param data_segment_availability Pointer to the data segment availability
+///                                  variable
 //
 void eval(InterpreterArguments *arguments, char *input_bfstring, int bonus,
           int *program_status, int *data_segment_availability);
