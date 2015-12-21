@@ -131,22 +131,22 @@ typedef struct
 //
 typedef struct
 {
-  char *program_;                 // array where the program is stored
-  size_t program_length_;         // size of the program array
-  int *jump_cache_;               // array holding the calculated jumps for speed
-  unsigned char **data_segment_;  // pointer to the data segment
-  size_t *data_length_;           // length of the data segment
-  char *program_counter_;         // pointer pointing to the current command
-  unsigned char **data_pointer_;  // pointer pointing to the current data byte
-  long long steps_;               // the maximal steps to run, 0 if infinity
+  char *program_;                // array where the program is stored
+  size_t program_length_;        // size of the program array
+  int *jump_cache_;              // array holding the calculated jumps for speed
+  unsigned char **data_segment_; // pointer to the data segment
+  size_t *data_length_;          // length of the data segment
+  char *program_counter_;        // pointer pointing to the current command
+  unsigned char **data_pointer_; // pointer pointing to the current data byte
+  long long steps_;              // the maximal steps to run, 0 if infinity
   Breakpoints breakpoints_;
   unsigned long long step_counter_;  // counts the steps the program makes
   int activate_reverse_step_;
-  MadeJumps made_jumps_;          // instance of the MadeJumps struct
+  MadeJumps made_jumps_;         // instance of the MadeJumps struct
   OverwrittenDataBytes overwrittenDataBytes_;
   JumpPoint *jump_points_;
   size_t jump_point_size_;
-  int loaded_language;            // language loaded in program (bf or BIO)
+  int loaded_language;           // language loaded in program (bf or BIO)
 } InterpreterArguments;
 
 
