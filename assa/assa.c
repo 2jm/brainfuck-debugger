@@ -1326,6 +1326,7 @@ void eval(InterpreterArguments *arguments, char *input_bfstring, int bonus,
 int checkCode(InterpreterArguments *arguments, int character, int *position,
               int bonus)
 {
+  // all allowed bf-characters
   if (character == '<' || character == '>' || character == '+' ||
       character == '-' || character == '.' || character == ',' ||
       character == '[' || character == ']')
@@ -1333,12 +1334,13 @@ int checkCode(InterpreterArguments *arguments, int character, int *position,
     arguments->program_[*position] = (char) character;
     (*position)++;
   }
+    // extended bf-characters
   else if ((bonus && character == '&') || (bonus && character == '%'))
   {
     arguments->program_[*position] = (char) character;
     (*position)++;
   }
-
+  // check if there are brackets/loops opened or closed
   if (character == '[')
     return 1;
   else if (character == ']')
