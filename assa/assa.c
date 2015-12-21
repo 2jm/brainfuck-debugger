@@ -2070,14 +2070,15 @@ int loadBio(char *file_directory, InterpreterArguments *arguments)
   if ((file = fopen(file_directory, "r")) == NULL)
   {
     printf("[ERR] reading the file failed\n");
-    return NOT_LOADED;
+    return FILE_READ_ERROR;
   }
 
   int character; // has to be a integer to read EOF as -1
-  int position = 0;
-  size_t program_size = 1024;
-  arguments->program_ = saveMalloc(program_size);
   int comment = 0;
+  size_t program_size = 1024;
+  int position = 0;
+  arguments->program_ = saveMalloc(program_size);
+
 
   // read the file char by char and write it into an array
   while ((character = fgetc(file)) != EOF)
