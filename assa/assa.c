@@ -370,7 +370,8 @@ void show(int program_loaded, char *program_counter);
 ///
 /// This function writes new user entered values into the data array
 ///
-/// @param program_loaded Variable to check if the program is loaded
+/// @param data_segment_availability Variable to check if the data segment is
+///                                  available
 /// @param data_segment Pointer to the beginning of the data array
 /// @param data_pointer_ Pointer to the present data cell
 //
