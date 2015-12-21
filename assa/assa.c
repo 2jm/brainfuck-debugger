@@ -349,7 +349,8 @@ int step(int program_loaded, InterpreterArguments *arguments,
 ///
 /// This function prints the value of a data cell in the wanted format
 ///
-/// @param program_loaded Variable to check if the program is loaded
+/// @param data_segment_availability Variable to check if the data segment is
+///                                  available
 /// @param data_segment Pointer to the data array
 /// @param data_pointer_ Pointer to the present data cell
 //
@@ -416,7 +417,6 @@ int loadBrainfuck(char *filedirectory, InterpreterArguments *arguments,
 /// @param **data_pointer Pointer to the actual position in the datasegment
 /// @param *input_code The bf-code to execute, which was given with the
 ///         function call
-///
 //
 void eval(InterpreterArguments *arguments, char *input_bfstring, int bonus,
           int *program_status, int *data_segment_availability);
@@ -434,7 +434,6 @@ void eval(InterpreterArguments *arguments, char *input_bfstring, int bonus,
 /// @return  1  if a bracket is opened
 ///         -1  if a bracket is closed
 ///          0  if no bracket is opened or closed
-///
 //
 int checkCode(InterpreterArguments *arguments, int character, int *position,
               int bonus);
@@ -497,7 +496,7 @@ void resetInterpreterArguments(InterpreterArguments *arguments);
 ///
 /// This function frees all allocated memory in the InterpreterArguments struct
 ///
-/// @param pointer Pointer to the InterpreterArguments struct
+/// @param arguments Pointer to the InterpreterArguments struct
 //
 void freeInterpreterArguments(InterpreterArguments *arguments);
 
@@ -507,7 +506,8 @@ void freeInterpreterArguments(InterpreterArguments *arguments);
 /// Expands the data segment by twice the size and sets the new memory to 0
 ///
 /// @param data_segment Double pointer to the data segment
-/// @param data_length Current size of the data segment
+/// @param data_length  Current size of the data segment
+/// @param data_pointer Pointer pointing to the current data byte
 //
 void expandDataSegment(unsigned char **data_segment, size_t *data_length,
                        unsigned char **data_pointer);
