@@ -24,6 +24,15 @@
 #endif
 
 
+#define SUCCESS 1
+
+// Return values of the program
+#define WRONG_USAGE_RETURN_CODE      1
+#define OUT_OF_MEMORY_RETURN_CODE    2
+#define FILE_PARSE_ERROR_RETURN_CODE 3
+#define FILE_READ_ERROR_RETURN_CODE  4
+
+// Program status
 #define NOT_LOADED       0
 #define LOADED_FROM_EVAL 1
 #define LOADED_FROM_FILE 2
@@ -31,22 +40,18 @@
 
 #define DATA_SEGMENT_AVAILABLE 1
 
+// Return values of the interpreters
 #define UNDEFINED_COMMAND_STOP  -1
 #define REGULAR_STOP             0
 #define STEP_STOP                1
 #define BREAKPOINT_STOP          2
 #define BRACES_NOT_MATCHING_STOP 3
 
-#define SUCCESS 1
-
+// File errors
 #define FILE_PARSE_ERROR -3
 #define FILE_READ_ERROR  -4
 
-#define WRONG_USAGE_RETURN_CODE      1
-#define OUT_OF_MEMORY_RETURN_CODE    2
-#define FILE_PARSE_ERROR_RETURN_CODE 3
-#define FILE_READ_ERROR_RETURN_CODE  4
-
+// Defines for the bio interpreter
 #define BIO_INCREMENT_BLOCK      0
 #define BIO_DECREMENT_BLOCK      1
 #define BIO_WHILE_START_BLOCK    2
