@@ -310,8 +310,6 @@ void run(InterpreterArguments *arguments, int *program_status,
 ///
 /// @param program_loaded Variable to check if a program is loaded
 /// @param arguments Pointer to all the interpreter arguments
-///                  (including the breakpoint-array)
-/// @param breakpoints_size size of the breakpoint-array
 //
 void setBreakpoint(int program_loaded, InterpreterArguments *arguments);
 
