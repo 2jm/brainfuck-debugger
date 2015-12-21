@@ -9,19 +9,13 @@
 //          Matthias Klotz  1530653
 //          Johannes Kopf   1431505
 //
-// Latest Changes: 08.12.2015 (by Jonas Juffinger)
+// Latest Changes: 21.12.2015 (by Jonas Juffinger)
 //------------------------------------------------------------------------------
 //
 
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-
-
-//#define __BENCHMARK__
-#ifdef __BENCHMARK__
-#include <time.h>
-#endif
 
 
 #define SUCCESS 1
@@ -1392,10 +1386,6 @@ int interpreterBrainfuck(InterpreterArguments *arguments)
   if (arguments->jump_cache_ == NULL)
     createJumpCache(arguments);
 
-#ifdef __BENCHMARK__
-  clock_t start = clock();
-#endif
-
   for (; *(arguments->program_counter_) != 0 && steps != 0;
          steps -= direction)
   {
@@ -1514,11 +1504,6 @@ int interpreterBrainfuck(InterpreterArguments *arguments)
 
     arguments->step_counter_ += direction;
   }
-
-#ifdef __BENCHMARK__
-  printf("\n\nCLOCKS: %llu\n", (unsigned long long) (clock() - start));
-#endif
-
 
   if (direction == -1)
     arguments->program_counter_++;
