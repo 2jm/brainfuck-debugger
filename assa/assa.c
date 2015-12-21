@@ -399,8 +399,8 @@ void binary(unsigned char number, char *binary_number, int digits);
 /// @param *program Array in which the bf-code gets written
 ///
 /// @return SUCCESS (0)           when loaded
-/// @return FILE_READ_ERROR (-4)  when not loaded (error)
-/// @return FILE_PARSE_ERROR (-3) when not loaded (parse error)
+///         FILE_READ_ERROR (-4)  when not loaded (error)
+///         FILE_PARSE_ERROR (-3) when not loaded (parse error)
 //
 int loadBrainfuck(char *filedirectory, InterpreterArguments *arguments,
                   int bonus);
@@ -432,8 +432,8 @@ void eval(InterpreterArguments *arguments, char *input_bfstring, int bonus,
 /// @param *position The position where in the array the char will be written
 ///
 /// @return 1   if a bracket is opened
-/// @return -1  if a bracket is closed
-/// @return 0   if no bracket is opened or closed
+///         -1  if a bracket is closed
+///         0   if no bracket is opened or closed
 ///
 //
 int checkCode(InterpreterArguments *arguments, int character, int *position,
@@ -599,7 +599,7 @@ void newJumpPoint(InterpreterArguments *arguments, int jump_point);
 /// @param arguments Pointer to all the interpreter arguments
 ///
 /// @return -1 if no JumpPoint with the given ID exists
-/// @return the position of the JumpPoint in the JumpPoint-Array
+///         the position of the JumpPoint in the JumpPoint-Array
 //
 int checkForExistingJumpPoint(InterpreterArguments *arguments);
 
@@ -611,8 +611,8 @@ int checkForExistingJumpPoint(InterpreterArguments *arguments);
 /// @param arguments Pointer to all the interpreter arguments
 ///
 /// @return -1 if the current command to interpret is undefined
-/// @return  0 if the program ran to the end
-/// @return  3 if the braces do not match
+///         0 if the program ran to the end
+///         3 if the braces do not match
 //
 int interpreterBio(InterpreterArguments *arguments);
 
