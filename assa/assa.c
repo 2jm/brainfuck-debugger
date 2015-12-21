@@ -971,7 +971,6 @@ void load(InterpreterArguments *arguments,
     {
       *program_status = NOT_LOADED;
     }
-
   }
   else
   {
@@ -1169,11 +1168,12 @@ void show(int program_loaded, char *program_counter)
   int size = (size_input != NULL) ?
              (int) strtol(size_input, (char **) NULL, 10) : 10;
 
-  // Source: http://stackoverflow
-  // .com/questions/4214314/get-a-substring-of-a-char
-  // print "size" characters from target string
-  // at code position + offset
+  // Source:
+  //   http://stackoverflow.com/questions/4214314/get-a-substring-of-a-char
+  // print "size" characters from target string at code position + offset
+  // begin
   printf("%.*s\n", size, program_counter);
+  // end
 }
 
 
@@ -1874,7 +1874,6 @@ void newJumpPoint(InterpreterArguments *arguments, int jump_point)
   arguments->jump_points_[jump_point].address_ = arguments->program_counter_;
 
   arguments->jump_points_[jump_point].id_ = **(arguments->data_pointer_);
-
 }
 
 
@@ -1911,6 +1910,7 @@ char *pop(Loop **top)
   free(old_top);              // now we can free the old StackItem
   return data_ptr;            // and return the data we remembered
 }
+
 
 int interpreterBio(InterpreterArguments *arguments)
 {
