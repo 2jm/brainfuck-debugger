@@ -398,9 +398,9 @@ void binary(unsigned char number, char *binary_number, int digits);
 /// @param *filedirectory Directory of the codefile to fetch
 /// @param *program Array in which the bf-code gets written
 ///
-/// @return SUCCESS (0)           when loaded
-/// @return FILE_READ_ERROR (-4)  when not loaded (error)
-/// @return FILE_PARSE_ERROR (-3) when not loaded (parse error)
+/// @return SUCCESS          when loaded
+///         FILE_READ_ERROR  when not loaded (error)
+///         FILE_PARSE_ERROR when not loaded (parse error)
 //
 int loadBrainfuck(char *filedirectory, InterpreterArguments *arguments,
                   int bonus);
@@ -431,9 +431,9 @@ void eval(InterpreterArguments *arguments, char *input_bfstring, int bonus,
 /// @param character The sign which should be checked
 /// @param *position The position where in the array the char will be written
 ///
-/// @return 1   if a bracket is opened
-/// @return -1  if a bracket is closed
-/// @return 0   if no bracket is opened or closed
+/// @return  1  if a bracket is opened
+///         -1  if a bracket is closed
+///          0  if no bracket is opened or closed
 ///
 //
 int checkCode(InterpreterArguments *arguments, int character, int *position,
@@ -446,9 +446,9 @@ int checkCode(InterpreterArguments *arguments, int character, int *position,
 ///
 /// @param arguments Pointer to all the interpreter arguments
 ///
-/// @return 0 if the program ran to the end
-///         1 if the program ran the specified steps
-///         2 if the program stopped because of a breakpoint
+/// @return REGULAR_STOP    if the program ran to the end
+///         STEP_STOP       if the program ran the specified steps
+///         BREAKPOINT_STOP if the program stopped because of a breakpoint
 //
 int interpreterBrainfuck(InterpreterArguments *arguments);
 
@@ -599,7 +599,7 @@ void newJumpPoint(InterpreterArguments *arguments, int jump_point);
 /// @param arguments Pointer to all the interpreter arguments
 ///
 /// @return -1 if no JumpPoint with the given ID exists
-/// @return the position of the JumpPoint in the JumpPoint-Array
+///         Otherwise the position of the JumpPoint in the JumpPoint-Array
 //
 int checkForExistingJumpPoint(InterpreterArguments *arguments);
 
@@ -610,9 +610,10 @@ int checkForExistingJumpPoint(InterpreterArguments *arguments);
 ///
 /// @param arguments Pointer to all the interpreter arguments
 ///
-/// @return -1 if the current command to interpret is undefined
-/// @return  0 if the program ran to the end
-/// @return  3 if the braces do not match
+/// @return UNDEFINED_COMMAND_STOP   if the current command to interpret is
+///                                  undefined
+/// @return REGULAR_STOP             if the program ran to the end
+///         BRACES_NOT_MATCHING_STOP if the braces do not match
 //
 int interpreterBio(InterpreterArguments *arguments);
 
@@ -625,9 +626,9 @@ int interpreterBio(InterpreterArguments *arguments);
 /// @param filedirectory Directory of the codefile to fetch
 /// @param arguments Pointer to all the interpreter arguments
 ///
-/// @return SUCCESS (0)           when loaded
-/// @return FILE_READ_ERROR (-4)  when not loaded (error)
-/// @return FILE_PARSE_ERROR (-3) when not loaded (parse error)
+/// @return SUCCESS           when loaded
+///         FILE_READ_ERROR   when not loaded (error)
+///         FILE_PARSE_ERROR  when not loaded (parse error)
 //
 int loadBio(char *file_directory, InterpreterArguments *arguments);
 
@@ -639,12 +640,16 @@ int loadBio(char *file_directory, InterpreterArguments *arguments);
 /// @param program_ptr Pointer to the current program position
 /// @param cell Position in the data array
 ///
-/// @return -1 if the next command is not recognized
-/// @return  0 if success, next command is 'increment the specified block'
-/// @return  1 if success, next command is 'decrement the specified block'
-/// @return  2 if success, next command is 'while the specified block is not 0'
-/// @return  3 if success, next command is 'end of the while'
-/// @return  4 if success, next command is 'output the specified block'
+/// @return UNDEFINED_COMMAND_STOP if the next command is not recognized
+///         BIO_INCREMENT_BLOCK    if next command is 'increment the specified
+///                                block'
+///         BIO_DECREMENT_BLOCK    if next command is 'decrement the specified
+///                                block'
+///         BIO_WHILE_START_BLOCK  if next command is 'while the specified block
+///                                is not 0'
+///         BIO_WHILE_END_BLOCK    if next command is 'end of the while'
+///         BIO_OUTPUT_BLOCK       if next command is 'output the specified
+///                                block'
 //
 int getNextCmd(char **program_ptr, int *cell);
 
@@ -1350,33 +1355,6 @@ int checkCode(InterpreterArguments *arguments, int character, int *position,
 }
 
 
-/*
-War mal eine Idee
-
-#define COMMAND_MOVE_LEFT 0
-#define COMMAND_MOVE_RIGHT 1
-#define COMMAND_INCREMENT 2
-#define COMMAND_DECREMENT 3
-#define COMMAND_LOOP_START 4
-#define COMMAND_LOOP_END 5
-#define COMMAND_PRINT 6
-#define COMMAND_INPUT 7
-#define COMMAND_SET_JUMP_POINT 8
-#define COMMAND_JUMP 9
-
-const char command[10][2] = {
-  {'>','<'},
-  {'<','>'},
-  {'+','-'},
-  {'-','+'},
-  {'[',']'},
-  {']','['},
-  {'.','.'},
-  {',',','},
-  {'&','&'},
-  {'%','%'}
-};*/
-
 int interpreterBrainfuck(InterpreterArguments *arguments)
 {
   // non static variables
@@ -1957,7 +1935,7 @@ int interpreterBio(InterpreterArguments *arguments)
       break;
     }
     int cmd = getNextCmd(&arguments->program_counter_, cell);
-    if (cmd == -1)
+    if (cmd == UNDEFINED_COMMAND_STOP)
     {
       return UNDEFINED_COMMAND_STOP;
     }
